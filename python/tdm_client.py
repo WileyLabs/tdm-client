@@ -67,7 +67,7 @@ class TDMClient:
         """
         return bool(TDMClient.DOI_REGEX.match(doi))
 
-    def downloadPDF(self, doi: str) -> Optional[str]:
+    def download_pdf(self, doi: str) -> Optional[str]:
         """
         Download an article PDF given its DOI.
 
@@ -103,7 +103,7 @@ class TDMClient:
             self.logger.error(f"Failed to save article: DOI {doi} to {pdf_path}: {e}")
             return None
 
-    def downloadPDFs(self, dois: List[str]) -> List[Optional[str]]:
+    def download_pdfs(self, dois: List[str]) -> List[Optional[str]]:
         """
         Download articles given a list of DOIs.
 
@@ -114,11 +114,11 @@ class TDMClient:
         
         downloaded_files = []
         for doi in unique_dois:
-            pdf_path = self.downloadPDF(doi)
+            pdf_path = self.download_pdf(doi)
             downloaded_files.append(pdf_path)
         return downloaded_files
 
-    def downloadPDFsFromFile(self, dois_file_path: str = 'dois.txt') -> List[Optional[str]]:
+    def download_pdfs_from_file(self, dois_file_path: str = 'dois.txt') -> List[Optional[str]]:
         """
         Download articles listed in a file, named dois.txt by default.
 
@@ -136,4 +136,4 @@ class TDMClient:
             self.logger.error(f"Failed to read DOIs from file: {dois_file_path}: {e}")
             return []
 
-        return self.downloadPDFs(dois)
+        return self.download_pdfs(dois)

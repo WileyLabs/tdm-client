@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def main():
 
     tdm = TDMClient(tdm_token)
-    tdm.downloadPDF(doi)
+    tdm.download_pdf(doi)
 
 if __name__ == "__main__":
     main()
