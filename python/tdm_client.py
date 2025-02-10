@@ -24,9 +24,9 @@ class TDMClient:
         self.logger = logging.getLogger(__name__)
 
         # Log the user's public IP address
-        public_ip = self.get_public_ip()
-        if public_ip:
-            self.logger.info(f"User's public IP address: {public_ip}")
+        self.public_ip = self.get_public_ip()
+        if self.public_ip:
+            self.logger.info(f"User's public IP address: {self.public_ip}")
 
         # Validate the API token
         try:
@@ -86,7 +86,16 @@ class TDMClient:
             response = requests.get(request_url, headers=self.api_headers, allow_redirects=True, stream=True)
             response.raise_for_status()
         except requests.RequestException as e:
-            self.logger.error(f"Failed to download article: DOI {doi}: {e}")
+
+            if response.status_code == 403:
+                self.logger.error(f"Download failed. Access denied (403). Public IP: {self.public_ip}: DOI: {doi}" )
+                self.logger.error(f">>Confirm access on WOL: https://onlinelibrary.wiley.com/doi/{doi}" )
+            elif response.status_code == 404:
+                self.logger.error(f"Download failed. Article not found (404). DOI: {doi}")
+            else:
+                self.logger.error(f"Download failed. API issue ({response.status_code}). DOI: {doi}: {e}")
+   
+            self.logger.debug(f"API Error: {e}")
             return None
 
         pdf_name = doi.replace('/', '-') + '.pdf'
