@@ -3,8 +3,7 @@ import os
 from tdm_client import TDMClient
 
 # Configuration
-#tdm_api_token = os.getenv('TDM_API_TOKEN','or_add_your_token_here')
-tdm_api_token = '1e1e7eb2-3c7c-4924-9146-49c374119629'
+tdm_api_token = os.getenv('TDM_API_TOKEN')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
