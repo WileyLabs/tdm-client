@@ -1,0 +1,23 @@
+# Generative AI
+# https://api.crossref.org/works?select=DOI,title&query=%27Generative%20AI%27&sample=5&query.publisher-name=Wiley&filter=license.url:http://creativecommons.org/licenses/by/4.0/,type:journal-article,member:311
+10.1002/cend.202400006
+10.1002/cb.2345
+10.1111/jlse.12141
+10.1111/modl.12927
+10.1002/imt2.178
+
+# Quantum Mechanics
+# https://api.crossref.org/works?select=DOI,title&query=%27Quantum%20Mechanics%27&sample=5&query.publisher-name=Wiley&filter=license.url:http://creativecommons.org/licenses/by/4.0/,type:journal-article,member:311
+10.1002/qute.202100016
+10.1111/jtsb.12390
+10.1002/qub2.61
+10.1002/qute.202400240
+10.1002/qute.202300219
+
+# Chemistry
+# https://api.crossref.org/works?select=DOI,title&query=%27Chemistry%27&sample=5&query.publisher-name=Wiley&filter=license.url:http://creativecommons.org/licenses/by/4.0/,type:journal-article,member:311
+10.1155/2022/9823604
+10.1002/cmtd.202000027
+10.1002/chem.202203942
+10.1002/chem.202000009
+10.1155/2023/9786090
