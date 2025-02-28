@@ -1,8 +1,8 @@
 # tdm-client
 
-![Python](https://img.shields.io/badge/python-v3.6+-blue.svg)
+![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Dependencies](https://img.shields.io/badge/dependencies-requests%20%7C%20urllib3-orange)
+![Dependencies](https://img.shields.io/badge/dependencies-requests-orange)
 
 ## Table of Contents
 - [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
@@ -46,10 +46,9 @@ The TDM Client greatly simplifies the use of the TDM API. All you need to get st
 
 You will require the following:
 
-* A [Python 3](https://www.python.org/downloads/) environment
+* A [Python 3.7+](https://www.python.org/downloads/) environment
 * Python packages:
   * requests>=2.31.0
-  * urllib3>=2.1.0
 * A [Wiley Online Library](https://onlinelibrary.wiley.com/) (WOL) Account
 * A TDM API Token, available from the WOL [TDM resources page](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining) using your WOL Account
 * Access to the content you wish to download

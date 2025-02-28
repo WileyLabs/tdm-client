@@ -21,8 +21,11 @@ def main():
     tdm.download_pdfs(dois)
 
     # Download multiple Article PDFs, listed in a file, to the 'downloads/oa-pdfs' folder
-    tdm.set_download_dir('downloads/oa-pdfs')
+    tdm.download_dir = 'downloads/oa-pdfs'
     tdm.download_pdfs_from_file('oa-dois.txt')
+
+    # Save the download results to a CSV file
+    tdm.save_download_results()
 
 if __name__ == "__main__":
     main()
