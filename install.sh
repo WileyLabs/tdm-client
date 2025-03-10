@@ -30,6 +30,7 @@ source venv/bin/activate
 
 # Install requirements
 pip install -r requirements.txt
+pip list
 
 # Deactivate virtual environment
 deactivate

@@ -3,8 +3,8 @@ import os
 import csv
 import logging
 import time
-import uuid
 import urllib.parse
+from uuid import UUID
 from http import HTTPStatus
 from typing import List, Optional
 from collections import OrderedDict
@@ -15,29 +15,32 @@ import requests
 
 # Local imports
 from doi_validator import DOIValidator
+from status import DownloadStatus
 
-@dataclass(frozen=True)
+@dataclass
 class DownloadResult:
-    """Class to store download attempt results.
-    
-    Attributes:
-        doi: Digital Object Identifier of the article
-        status: HTTP status code from the attempt
-        comment: Additional context about the result
-    """
+    """Class to store download attempt results."""
     doi: str
-    status: HTTPStatus
-    comment: str
+    status: DownloadStatus
+    comment: Optional[str] = None
+    path: Optional[str] = None
+    size: Optional[int] = None
+    duration: Optional[float] = None  # Duration in seconds
+
+    def __str__(self) -> str:
+        """Return a human-readable string representation."""
+        return f"{self.status}"
 
 class TDMClient:
     """Client for downloading articles from Wiley's TDM API."""
 
     # API URLs and configuration
+    ENV_TOKEN_KEY: str = 'TDM_API_TOKEN'
     TDM_API_URL: str = 'https://api.wiley.com/onlinelibrary/tdm/v1/articles/'
     TDM_TOKEN_HEADER: str = 'Wiley-TDM-Client-Token'
     CROSSREF_API_URL: str = 'https://api.crossref.org/works'
     IPIFY_API_URL: str = 'https://api.ipify.org?format=json'
-    DOI_URL_PREFIX: str = "https://doi.org/"
+    WOL_PDF_URL: str = "https://onlinelibrary.wiley.com/doi/epdf/"
 
     # Default settings
     DEFAULT_RATE_LIMIT: float = 1.0 #seconds
@@ -52,29 +55,36 @@ class TDMClient:
     
     # File handling
     DOI_SEPARATOR: str = "-"  # Used when converting DOI to filename
-    CSV_HEADERS: List[str] = ['DOI', 'Status Code', 'Status', 'Comment']
+    CSV_HEADERS: List[str] = ['DOI', 'Status', 'Comment', 'Path']
 
-    def __init__(self, tdm_token: str, download_dir: str = 'downloads/'):
+    def __init__(self, tdm_token: Optional[str] = None, download_dir: str = 'downloads/'):
         """Initialize the TDMClient with a TDM API token and download directory.
 
         Args:
-            tdm_token: UUID token from Wiley's TDM service
+            tdm_token: UUID token string from Wiley's TDM service. If None, reads from TDM_API_TOKEN env var
             download_dir: Directory where PDFs will be saved. Defaults to 'downloads/'
 
         Raises:
-            ValueError: If tdm_token is not a valid UUID
+            ValueError: If tdm_token is not provided and not found in environment
         """
-        # Configure logging
         self.logger = logging.getLogger(__name__)
+
+        # Get token from environment if not provided
+        if tdm_token is None:
+            tdm_token = os.getenv(self.ENV_TOKEN_KEY)
+            if not tdm_token:
+                raise ValueError(f"TDM API token not provided and {self.ENV_TOKEN_KEY} environment variable not set")
+            self.logger.debug("Using TDM API token from environment variable")
 
         # Public attributes
         self.download_results_errors_only: bool = False
         self.safe_mode: bool = True
+        self.overwrite_existing_files: bool = True
 
         # Private instance attributes with type hints and defaults (use setters/constructors)
         self._download_dir: str = ""
         self._tdm_token: str = ""
-        self._tdm_headers: dict = {}
+        self._tdm_headers: dict[str, str] = {}
         self._tdm_session: requests.Session = requests.Session()
         self._crossref_session: requests.Session = requests.Session()
         self._rate_limit: float = self.DEFAULT_RATE_LIMIT
@@ -83,8 +93,8 @@ class TDMClient:
         self._doi_validator:DOIValidator = DOIValidator()
 
         # Configure initial state
-        _ = self.my_ip_address
-        self.tdm_token = tdm_token
+        _ = self.my_ip_address  # Fetch IP address
+        self.tdm_token = tdm_token  # Will validate UUID format
         self.download_dir = download_dir
 
     @property
@@ -116,25 +126,16 @@ class TDMClient:
         return self._tdm_token
 
     @tdm_token.setter
-    def tdm_token(self, value: str):
+    def tdm_token(self, value: UUID):
         """Set and validate the TDM API token.
         
         Args:
             value: UUID token from Wiley's TDM service
-
-        Raises:
-            ValueError: If token is not a valid UUID
-        """
-        try:
-            uuid.UUID(value)
-        except ValueError:
-            self.logger.error(f"Invalid TDM API token: {value}")
-            raise ValueError(f"The TDM API token must be a valid UUID: {value}")
-            
-        self._tdm_token = value
-        self._tdm_headers = {self.TDM_TOKEN_HEADER: value}
+        """    
+        self._tdm_token = str(value)
+        self._tdm_headers = {self.TDM_TOKEN_HEADER: self._tdm_token}
         self._tdm_session.headers.update(self._tdm_headers)
-        self.logger.debug(f"TDM API token updated")
+        self.logger.debug("TDM API token updated")
 
     @property
     def download_dir(self) -> str:
@@ -175,59 +176,103 @@ class TDMClient:
                 
         return self._my_ip_address
 
-    def download_pdf(self, doi: str) -> Optional[str]:
+    def download_pdf(self, doi: str) -> DownloadResult:
+        """Download a single article PDF given its DOI.
+
+        Args:
+            doi: The DOI of the article to download
+
+        Returns:
+            DownloadResult: Result of the download attempt
+
+        Raises:
+            ValueError: If DOI is None or empty string
+        """
+        if doi is None or not doi.strip():
+            raise ValueError("DOI cannot be None or empty")
+            
+        start_time = time.perf_counter()
+        result = self._download_pdf(doi)
+        duration = time.perf_counter() - start_time
+        result.duration = duration
+        self._add_download_result(result)
+        return result
+
+    def _download_pdf(self, doi: str) -> DownloadResult:
         """Download an article PDF given its DOI.
 
         Args:
             doi: The DOI of the article to download
 
         Returns:
-            str or None: Path to the downloaded PDF, or None if download failed
+            DownloadResult: DownloadResult for the rquested Article DOI
         """
         # Avoid double encoding or DOI validation issues later
-        doi = urllib.parse.unquote(doi) 
+        doi = urllib.parse.unquote(doi)
         
-        # Validate the DOI, pre-flight (adopt same HTTPStatus codes as TDM API)
+        # Validate the DOI
         if self.safe_mode:
-            if ';' in doi: # WIP!
-                self._add_download_result(doi, HTTPStatus.UNPROCESSABLE_ENTITY, "Known Issue: DOI contains semi-colon")
-                return None
-            if not self._doi_validator.check_format(doi):
-                self._add_download_result(doi, HTTPStatus.BAD_REQUEST, "Invalid DOI format")
-                return None
-            if not self._doi_validator.check_crossref(doi):
-                self._add_download_result(doi, HTTPStatus.NOT_FOUND, "Crossref: Unknown DOI")
-                return None
-        
-        # URL encode the DOI
+            try:  
+                if ';' in doi:
+                    return DownloadResult(
+                        doi, 
+                        DownloadStatus.SEMICOLON_ERROR,
+                        "Known API limitation: DOI contains semicolon"
+                    )
+                if not self._doi_validator.check_format(doi):
+                    return DownloadResult(
+                        doi,
+                        DownloadStatus.INVALID_DOI_FORMAT
+                    )
+                if not self._doi_validator.check_crossref(doi):
+                    return DownloadResult(
+                        doi,
+                        DownloadStatus.UNKNOWN_WILEY_DOI_CROSSREF
+                    )
+            except requests.RequestException as e:
+                return DownloadResult(
+                    doi,
+                    DownloadStatus.CROSSREF_API_ERROR,
+                    e.strerror
+                )
+        # Download the PDF (The DOI must be encoded)
         encoded_doi = urllib.parse.quote(doi, safe='')
-        request_url = self.TDM_API_URL + encoded_doi
-        self.logger.debug(f"API request URL: {request_url}")
-        status = None
+        request_url = f"{self.TDM_API_URL}{encoded_doi}"
+        logging.debug(f"Requesting PDF from: {request_url}")
 
-        # Download the PDF
         try:
             response = self._tdm_session.get(request_url, allow_redirects=True, stream=True)
             status = HTTPStatus(response.status_code)
-            
             if status != HTTPStatus.OK:
-                if status == HTTPStatus.FORBIDDEN:
-                    self._add_download_result(doi, status, 
-                        f"TDM access denied from IP {self.my_ip_address}. Try manually on WOL: https://doi.org/{doi}")
-                elif status == HTTPStatus.NOT_FOUND:
-                    self._add_download_result(doi, status, "Article not found")
+                if status == status.FORBIDDEN:
+                    return DownloadResult(
+                        doi,
+                        DownloadStatus.UNAUTHORIZED,
+                        f"TDM access denied from IP {self.my_ip_address}. Try manually: {self.WOL_PDF_URL}{doi}"
+                    )
+                elif status == status.NOT_FOUND:
+                    return DownloadResult(
+                        doi,
+                        DownloadStatus.UNKNOWN_WILEY_DOI,
+                    )
                 else:
-                    self._add_download_result(doi, status, f"TDM API error: {response.text}")
-                return None
-                
+                    return DownloadResult(
+                        doi,
+                        DownloadStatus.WILEY_API_ERROR,
+                        response.text
+                    )
+                    
             # Save the PDF
             return self._save_pdf(response, doi)
             
         except requests.RequestException as e:
-            self._add_download_result(doi, HTTPStatus.INTERNAL_SERVER_ERROR, f"Network error: {str(e)}")
-            return None
+            return DownloadResult(
+                doi,
+                DownloadStatus.WILEY_API_ERROR,
+                e.strerror
+            )
 
-    def _save_pdf(self, response: requests.Response, doi: str) -> Optional[str]:
+    def _save_pdf(self, response: requests.Response, doi: str) -> DownloadResult:
         """Save PDF content from response to file.
 
         Args:
@@ -235,88 +280,139 @@ class TDMClient:
             doi: The DOI of the article
 
         Returns:
-            str or None: Path to the saved PDF, or None if saving failed
+            DownloadResult: Result of the save operation
         """
+        if not response.headers.get('content-type', '').startswith('application/pdf'):
+            return DownloadResult(
+                doi,
+                DownloadStatus.INVALID_CONTENT
+            )
+
         pdf_name = f"{doi.replace('/', self.DOI_SEPARATOR)}.pdf"
         pdf_path = os.path.join(self.download_dir, pdf_name)
+
+        if not self.overwrite_existing_files and os.path.exists(pdf_path):
+            self.logger.warning(f"PDF already exists: {pdf_path}")
+            return DownloadResult(
+                doi,
+                DownloadStatus.FILE_EXISTS,
+                "",
+                pdf_path,
+                os.path.getsize(pdf_path)
+            )
 
         try:
             with open(pdf_path, 'wb') as pdf_file:
                 for chunk in response.iter_content(chunk_size=self.CHUNK_SIZE):
                     if chunk:
                         pdf_file.write(chunk)
-            self._add_download_result(doi, HTTPStatus.OK, f"Downloaded Article PDF to: {pdf_path}")
-            return pdf_path
-        except IOError as e:
-            self._add_download_result(
-                doi, 
-                HTTPStatus.INTERNAL_SERVER_ERROR, #Yes, this is a bit of a stretch
-                f"IO Error. Failed to save Article PDF to {pdf_path}: {e}"
+            return DownloadResult(
+                doi,
+                DownloadStatus.SUCCESS,
+                "",
+                pdf_path,
+                os.path.getsize(pdf_path)
             )
-            return None
+        except IOError as e:
+            return DownloadResult(
+                doi,
+                DownloadStatus.STORAGE_ERROR,
+                e.strerror,
+                pdf_path
+            )
 
-    def download_pdfs(self, dois: List[str]) -> List[Optional[str]]:
+    def download_pdfs(self, dois: List[str]) -> List[DownloadResult]:
         """Download multiple articles given their DOIs.
 
         Args:
-            dois: List of DOIs to download
+            dois: List of DOIs to download. None, empty strings, and duplicates will be filtered.
 
         Returns:
-            List[Optional[str]]: List of paths to downloaded PDFs, None for failed downloads
+            List[DownloadResult]: List of download results
         """
-        unique_dois = list(OrderedDict.fromkeys(dois))  # Remove duplicates while maintaining order
-        
-        downloaded_files = []
+        unique_dois = self._filter_and_dedupe_dois(dois)
+        results: List[DownloadResult] = []
+
         for doi in unique_dois:
-            pdf_path = self.download_pdf(doi)
-            downloaded_files.append(pdf_path)
+            result = self.download_pdf(doi)
+            if result:
+                results.append(result)
             if self.rate_limit > 0:
                 self.logger.debug(f"Rate limiting: sleeping for {self.rate_limit} seconds")
                 time.sleep(self.rate_limit)
-        return downloaded_files
+        return results
 
-    def download_pdfs_from_file(self, dois_file_path: str = DEFAULT_DOIS_FILE) -> List[Optional[str]]:
+    def download_pdfs_from_file(self, dois_file_path: str = DEFAULT_DOIS_FILE) -> List[DownloadResult]:
         """Download articles listed in a file.
 
         Args:
-            dois_file_path: Path to file containing DOIs, one per line. Defaults to 'dois.txt'
+            dois_file_path: Path to file containing DOIs, one per line
 
         Returns:
-            List[Optional[str]]: List of paths to downloaded PDFs, None for failed downloads
+            List[DownloadResult]: List of download results
+
+        Raises:
+            FileNotFoundError: If the DOIs file doesn't exist
+            OSError: If there are permission or other OS-level errors
         """
-        try:
-            with open(dois_file_path, 'r') as file:
-                dois = []
-                for line in file:
-                    stripped_line = line.strip()
-                    if (stripped_line and not stripped_line.startswith('#')):
-                        dois.append(stripped_line)
-        except IOError as e:
-            self.logger.error(f"Failed to read DOIs from file: {dois_file_path}: {e}")
+        if not os.path.exists(dois_file_path):
+            message = f"DOIs file not found: {dois_file_path}"
+            self.logger.error(message)
+            raise FileNotFoundError(message)
+
+        dois = []
+        with open(dois_file_path, 'r') as file:
+            for line in file:
+                stripped_line = line.strip()
+                if stripped_line and not stripped_line.startswith('#'):
+                    dois.append(stripped_line)
+
+        if not dois:
+            self.logger.warning(f"No valid DOIs found in file: {dois_file_path}")
             return []
 
+        self.logger.info(f"Found {len(dois)} DOIs in {dois_file_path}")
         return self.download_pdfs(dois)
 
-    def _add_download_result(self, doi: str, status: HTTPStatus, comment: str = "") -> None:
+    def _filter_and_dedupe_dois(self, dois: List[str]) -> List[str]:
+        """Filter invalid DOIs and remove duplicates while maintaining order.
+        
+        Args:
+            dois: List of DOIs to filter and deduplicate
+            
+        Returns:
+            List[str]: Filtered and deduplicated DOIs
+        """
+        # Filter None/empty DOIs and clean whitespace
+        valid_dois = [doi.strip() for doi in dois if doi is not None and doi.strip()]
+        # Remove duplicates while maintaining order
+        unique_dois = list(OrderedDict.fromkeys(valid_dois))
+        
+        filtered_count = len(dois) - len(unique_dois)
+        if filtered_count > 0:
+            self.logger.info(f"Filtered out {filtered_count} invalid or duplicate DOIs")
+        
+        return unique_dois
+
+    def _add_download_result(self, result: DownloadResult) -> None:
         """Record download result.
 
         Args:
-            doi: The DOI that failed
-            status: The HTTP status code
-            comment: Additional context about the result. Defaults to empty string
+            result: DownloadResult to add to the list
         """
-        if status == HTTPStatus.OK and self.download_results_errors_only:
+        if result.status == DownloadStatus.SUCCESS and self.download_results_errors_only:
             return
 
-        message = f"{status.phrase} ({status.value}): {comment}. DOI: {doi}"
+        message = f"{result.status} - DOI: {result.doi}"
+        if result.comment:
+            message += f" - {result.comment}"
 
-        if status == HTTPStatus.OK:
+        if result.status == DownloadStatus.SUCCESS:
             self.logger.info(message)
         else:
             self.logger.error(message)
 
-        result = DownloadResult(doi, status, comment)
-        self.download_results.append(result)
+        self._download_results.append(result) 
 
     @property
     def download_results(self) -> List[DownloadResult]:
@@ -325,7 +421,7 @@ class TDMClient:
         Returns:
             List[DownloadResult]: List of all download attempts and their results
         """
-        return self._download_results.copy()  # Return copy to prevent external modification
+        return self._download_results.copy()  # Return copy to prevent external modifications.copy()  # Return copy to prevent external modification
 
     def save_download_results(self, csv_path: str = DEFAULT_RESULTS_FILE) -> None:
         """Save download results to CSV file.
@@ -337,17 +433,20 @@ class TDMClient:
             self.logger.info("No results to save")
             return
 
-        os.makedirs(os.path.dirname(csv_path), exist_ok=True)  # Create directory if needed
-            
+        # Create directory if needed
+        directory = os.path.dirname(csv_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
+
         with open(csv_path, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(self.CSV_HEADERS)
             for result in self._download_results:
                 writer.writerow([
                     result.doi,
-                    result.status.value,
-                    result.status.phrase,
-                    result.comment
+                    result.status,
+                    result.comment or "",
+                    result.path or ""
                 ])
         
         self.logger.info(f"Download results saved to: {csv_path}")

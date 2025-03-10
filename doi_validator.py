@@ -41,6 +41,9 @@ class DOIValidator:
 
         Returns:
             bool: True if verified by CrossRef, False otherwise
+
+        Raises:
+            requests.RequestException: If network error occurs during validation
         """
         crossref_params = {
             'select': self.CROSSREF_SELECT,
@@ -48,15 +51,11 @@ class DOIValidator:
             'filter': f'doi:{doi}'
         }
 
-        try:
-            response = self.crossref_session.get(self.CROSSREF_API_URL, params=crossref_params)
-            if response.status_code != HTTPStatus.OK:
-                return False
-
-            crossref_data = response.json()
-            return (crossref_data.get('status') == 'ok' and
-                   crossref_data.get('message') and
-                   crossref_data['message'].get('total-results') == 1)
-
-        except requests.RequestException:
+        response = self.crossref_session.get(self.CROSSREF_API_URL, params=crossref_params)
+        if response.status_code != HTTPStatus.OK:
             return False
+
+        crossref_data = response.json()
+        return (crossref_data.get('status') == 'ok' and
+                crossref_data.get('message') and
+                crossref_data['message'].get('total-results') == 1)

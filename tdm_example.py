@@ -2,15 +2,13 @@ import logging
 import os
 from tdm_client import TDMClient
 
-# Configuration
-tdm_api_token = os.getenv('TDM_API_TOKEN')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def main():
 
-    tdm = TDMClient(tdm_api_token)
+    tdm = TDMClient()
 
     # Download a single Article PDF to the 'downloads' folder
     doi = '10.1002/1878-0261.13818'
@@ -22,6 +20,7 @@ def main():
 
     # Download multiple Article PDFs, listed in a file, to the 'downloads/oa-pdfs' folder
     tdm.download_dir = 'downloads/oa-pdfs'
+    tdm.download_pdf(doi)
     tdm.download_pdfs_from_file('oa-dois.txt')
 
     # Save the download results to a CSV file
