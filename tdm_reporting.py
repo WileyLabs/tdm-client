@@ -5,7 +5,7 @@ import csv
 import logging
 from typing import List
 
-from status import DownloadStatus
+from download_status import DownloadStatus
 from download_result import DownloadResult
 
 class TDMReporting:

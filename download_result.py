@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Optional
 from http import HTTPStatus
-from status import DownloadStatus
+from download_status import DownloadStatus
 
 @dataclass
 class DownloadResult:

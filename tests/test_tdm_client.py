@@ -5,8 +5,9 @@ from unittest.mock import Mock, patch
 
 import requests
 import urllib
-from tdm_client import TDMClient, DownloadResult
-from status import DownloadStatus
+from tdm_client import TDMClient
+from download_result import DownloadResult
+from download_status import DownloadStatus
 
 # Test constants
 DOIS_FILE = "tests/dois.txt"  # Test DOIs file

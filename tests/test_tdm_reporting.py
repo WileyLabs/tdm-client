@@ -7,7 +7,7 @@ from datetime import datetime
 
 from tdm_client import DownloadResult
 from tdm_reporting import TDMReporting
-from status import DownloadStatus
+from download_status import DownloadStatus
 
 # Test constants
 TEST_DOI_1 = "10.1002/test1"
@@ -59,7 +59,7 @@ def test_save_download_results(tmp_path, sample_results):
         assert success_row['Status'] == 'SUCCESS'
         assert success_row['Comment'] == 'Successfully downloaded'
         assert success_row['Path'] == TEST_FILE
-        assert success_row['Size (bytes)'] == str(TEST_SIZE)
+        assert success_row['Size (KB)'] == str(TEST_SIZE)
         assert success_row['Duration (s)'] == '1.2'
         assert success_row['HTTP Status'] == str(HTTPStatus.OK.value)
         
@@ -69,7 +69,7 @@ def test_save_download_results(tmp_path, sample_results):
         assert error_row['Status'] == 'FORBIDDEN'
         assert error_row['Comment'] == 'Access denied'
         assert error_row['Path'] == ''
-        assert error_row['Size (bytes)'] == ''
+        assert error_row['Size (KB)'] == ''
         assert error_row['Duration (s)'] == ''
         assert error_row['HTTP Status'] == str(HTTPStatus.FORBIDDEN.value)
 

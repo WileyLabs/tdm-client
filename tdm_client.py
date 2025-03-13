@@ -15,24 +15,9 @@ import requests
 
 # Local imports
 from doi_validator import DOIValidator
-from status import DownloadStatus
 from tdm_reporting import TDMReporting
 from download_result import DownloadResult
-
-@dataclass
-class DownloadResult:
-    """Class to store download attempt results."""
-    doi: str
-    status: DownloadStatus
-    comment: Optional[str] = None
-    path: Optional[str] = None
-    size: Optional[int] = None
-    duration: Optional[float] = None  # Duration in seconds
-    api_status: Optional[HTTPStatus] = None  # HTTP status code from TDM API
-
-    def __str__(self) -> str:
-        """Return a human-readable string representation."""
-        return f"{self.status}"
+from download_status import DownloadStatus
 
 class TDMClient:
     """Client for downloading articles from Wiley's TDM API."""
@@ -223,7 +208,7 @@ class TDMClient:
         # Validate if in safe mode
         if self.safe_mode:
             validation_result = self._validate_doi(doi)
-            if validation_result:
+            if (validation_result):
                 return validation_result
 
         # Prepare request
@@ -347,13 +332,14 @@ class TDMClient:
         pdf_path = os.path.join(self.download_dir, pdf_name)
 
         if not self.overwrite_existing_files and os.path.exists(pdf_path):
-            self.logger.warning(f"PDF already exists: {pdf_path}")
+            file_size = self._get_file_size(pdf_path)
+            self.logger.warning(f"PDF already exists: {pdf_path} ({file_size} KB)")
             return DownloadResult(
                 doi,
                 DownloadStatus.FILE_EXISTS,
                 "",
                 pdf_path,
-                os.path.getsize(pdf_path)
+                file_size
             )
 
         try:
@@ -361,7 +347,7 @@ class TDMClient:
                 for chunk in response.iter_content(chunk_size=self.CHUNK_SIZE):
                     if chunk:
                         pdf_file.write(chunk)
-            file_size = round(os.path.getsize(pdf_path) / self.KB)
+            file_size = self._get_file_size(pdf_path)
             self.logger.info(f"Downloaded PDF: {pdf_path} ({file_size} KB)")
             return DownloadResult(
                 doi,
@@ -377,6 +363,14 @@ class TDMClient:
                 str(e),
                 pdf_path
             )
+
+    def _get_file_size(self, file_path: str) -> int:
+        """Get the size of a file in kilobytes.
+
+        Args:
+            file_path: Path to the file
+        """
+        return round(os.path.getsize(file_path) / self.KB)
 
     def download_pdfs(self, dois: List[str]) -> List[DownloadResult]:
         """Download multiple articles given their DOIs.
