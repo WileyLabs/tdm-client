@@ -16,6 +16,8 @@ import requests
 # Local imports
 from doi_validator import DOIValidator
 from status import DownloadStatus
+from tdm_reporting import TDMReporting
+from download_result import DownloadResult
 
 @dataclass
 class DownloadResult:
@@ -26,6 +28,7 @@ class DownloadResult:
     path: Optional[str] = None
     size: Optional[int] = None
     duration: Optional[float] = None  # Duration in seconds
+    api_status: Optional[HTTPStatus] = None  # HTTP status code from TDM API
 
     def __str__(self) -> str:
         """Return a human-readable string representation."""
@@ -38,7 +41,6 @@ class TDMClient:
     ENV_TOKEN_KEY: str = 'TDM_API_TOKEN'
     TDM_API_URL: str = 'https://api.wiley.com/onlinelibrary/tdm/v1/articles/'
     TDM_TOKEN_HEADER: str = 'Wiley-TDM-Client-Token'
-    CROSSREF_API_URL: str = 'https://api.crossref.org/works'
     IPIFY_API_URL: str = 'https://api.ipify.org?format=json'
     WOL_PDF_URL: str = "https://onlinelibrary.wiley.com/doi/epdf/"
 
@@ -56,6 +58,10 @@ class TDMClient:
     # File handling
     DOI_SEPARATOR: str = "-"  # Used when converting DOI to filename
     CSV_HEADERS: List[str] = ['DOI', 'Status', 'Comment', 'Path']
+
+    # Add timeout configuration
+    CONNECT_TIMEOUT = 20  # seconds for initial connection
+    READ_TIMEOUT = 30    # seconds for reading response
 
     def __init__(self, tdm_token: Optional[str] = None, download_dir: str = 'downloads/'):
         """Initialize the TDMClient with a TDM API token and download directory.
@@ -86,13 +92,16 @@ class TDMClient:
         self._tdm_token: str = ""
         self._tdm_headers: dict[str, str] = {}
         self._tdm_session: requests.Session = requests.Session()
-        self._crossref_session: requests.Session = requests.Session()
         self._rate_limit: float = self.DEFAULT_RATE_LIMIT
         self._my_ip_address: str = self.DEFAULT_IP_ADDRESS
         self._download_results: List[DownloadResult] = []
         self._doi_validator:DOIValidator = DOIValidator()
 
         # Configure initial state
+        self._tdm_headers =  {
+            self.TDM_TOKEN_HEADER: self._tdm_token,
+            'User-Agent': 'TDMClient/1.0',
+        }
         _ = self.my_ip_address  # Fetch IP address
         self.tdm_token = tdm_token  # Will validate UUID format
         self.download_dir = download_dir
@@ -133,8 +142,9 @@ class TDMClient:
             value: UUID token from Wiley's TDM service
         """    
         self._tdm_token = str(value)
-        self._tdm_headers = {self.TDM_TOKEN_HEADER: self._tdm_token}
-        self._tdm_session.headers.update(self._tdm_headers)
+        # Update only the token header
+        self._tdm_headers[self.TDM_TOKEN_HEADER] = self._tdm_token
+        self._tdm_session.headers.update({self.TDM_TOKEN_HEADER: self._tdm_token})
         self.logger.debug("TDM API token updated")
 
     @property
@@ -172,7 +182,7 @@ class TDMClient:
                 if self._my_ip_address:
                     self.logger.info(f"Your IP address, used to check entitlements: {self._my_ip_address}")
             except requests.RequestException as e:
-                self.logger.error(f"Failed to fetch public IP address: {e}")
+                self.logger.error(f"Failed to fetch public IP address: {str(e)}")
                 
         return self._my_ip_address
 
@@ -205,71 +215,116 @@ class TDMClient:
             doi: The DOI of the article to download
 
         Returns:
-            DownloadResult: DownloadResult for the rquested Article DOI
+            DownloadResult: DownloadResult for the requested Article DOI
         """
         # Avoid double encoding or DOI validation issues later
         doi = urllib.parse.unquote(doi)
         
-        # Validate the DOI
+        # Validate if in safe mode
         if self.safe_mode:
-            try:  
-                if ';' in doi:
-                    return DownloadResult(
-                        doi, 
-                        DownloadStatus.SEMICOLON_ERROR,
-                        "Known API limitation: DOI contains semicolon"
-                    )
-                if not self._doi_validator.check_format(doi):
-                    return DownloadResult(
-                        doi,
-                        DownloadStatus.INVALID_DOI_FORMAT
-                    )
-                if not self._doi_validator.check_crossref(doi):
-                    return DownloadResult(
-                        doi,
-                        DownloadStatus.UNKNOWN_WILEY_DOI_CROSSREF
-                    )
-            except requests.RequestException as e:
-                return DownloadResult(
-                    doi,
-                    DownloadStatus.CROSSREF_API_ERROR,
-                    e.strerror
-                )
-        # Download the PDF (The DOI must be encoded)
+            validation_result = self._validate_doi(doi)
+            if validation_result:
+                return validation_result
+
+        # Prepare request
         encoded_doi = urllib.parse.quote(doi, safe='')
         request_url = f"{self.TDM_API_URL}{encoded_doi}"
-        logging.debug(f"Requesting PDF from: {request_url}")
+        self.logger.debug(f"Requesting PDF from: {request_url}")
 
         try:
-            response = self._tdm_session.get(request_url, allow_redirects=True, stream=True)
+            response = self._tdm_session.get(
+                request_url, 
+                allow_redirects=True, 
+                stream=True,
+                timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
+            )
+
+            # Log response info for debugging
+            self.logger.debug(f"Response headers: {dict(response.headers)}")
+
             status = HTTPStatus(response.status_code)
-            if status != HTTPStatus.OK:
-                if status == status.FORBIDDEN:
-                    return DownloadResult(
-                        doi,
-                        DownloadStatus.UNAUTHORIZED,
-                        f"TDM access denied from IP {self.my_ip_address}. Try manually: {self.WOL_PDF_URL}{doi}"
-                    )
-                elif status == status.NOT_FOUND:
-                    return DownloadResult(
-                        doi,
-                        DownloadStatus.UNKNOWN_WILEY_DOI,
-                    )
-                else:
-                    return DownloadResult(
-                        doi,
-                        DownloadStatus.WILEY_API_ERROR,
-                        response.text
-                    )
-                    
-            # Save the PDF
-            return self._save_pdf(response, doi)
             
+            if status != HTTPStatus.OK:
+                return self._handle_error_status(doi, status, response)
+                    
+            # Save PDF and include status code
+            result = self._save_pdf(response, doi)
+            result.api_status = status
+            return result
+                
         except requests.RequestException as e:
             return DownloadResult(
                 doi,
                 DownloadStatus.WILEY_API_ERROR,
-                e.strerror
+                str(e)
+            )
+
+    def _validate_doi(self, doi: str) -> Optional[DownloadResult]:
+        """Validate DOI format and existence.
+        
+        Args:
+            doi: The DOI to validate
+            
+        Returns:
+            Optional[DownloadResult]: Error result if validation fails, None if valid
+        """
+        try:
+            if ';' in doi:
+                return DownloadResult(
+                    doi, 
+                    DownloadStatus.SEMICOLON_ERROR,
+                    "Known API limitation: DOI contains semicolon"
+                )
+            if not self._doi_validator.check_format(doi):
+                return DownloadResult(
+                    doi,
+                    DownloadStatus.INVALID_DOI_FORMAT
+                )
+            if not self._doi_validator.check_crossref(doi):
+                return DownloadResult(
+                    doi,
+                    DownloadStatus.UNKNOWN_WILEY_DOI_CROSSREF
+                )
+            return None
+        except requests.RequestException as e:
+            return DownloadResult(
+                doi,
+                DownloadStatus.CROSSREF_API_ERROR,
+                str(e)
+            )
+
+    def _handle_error_status(self, doi: str, status: HTTPStatus, response: requests.Response) -> DownloadResult:
+        """Handle non-200 HTTP status codes.
+        
+        Args:
+            doi: The DOI being processed
+            status: HTTP status code
+            response: Full response object
+            
+        Returns:
+            DownloadResult: Error result with appropriate status
+        """
+        
+        if status == HTTPStatus.FORBIDDEN:
+            return DownloadResult(
+                doi,
+                DownloadStatus.FORBIDDEN,
+                f"TDM access denied from IP {self.my_ip_address}. Try manually: {self.WOL_PDF_URL}{doi}",
+                api_status=status
+            )
+        elif status == HTTPStatus.NOT_FOUND:
+            return DownloadResult(
+                doi,
+                DownloadStatus.UNKNOWN_WILEY_DOI,
+                "Enable safe_mode to validate DOIs against CrossRef" if not self.safe_mode else None,
+                api_status=status
+            )
+        else:
+            return DownloadResult(
+                doi,
+                DownloadStatus.WILEY_API_ERROR,
+                response.text,
+                api_status=status
             )
 
     def _save_pdf(self, response: requests.Response, doi: str) -> DownloadResult:
@@ -306,18 +361,20 @@ class TDMClient:
                 for chunk in response.iter_content(chunk_size=self.CHUNK_SIZE):
                     if chunk:
                         pdf_file.write(chunk)
+            file_size = round(os.path.getsize(pdf_path) / self.KB)
+            self.logger.info(f"Downloaded PDF: {pdf_path} ({file_size} KB)")
             return DownloadResult(
                 doi,
                 DownloadStatus.SUCCESS,
                 "",
                 pdf_path,
-                os.path.getsize(pdf_path)
+                file_size
             )
         except IOError as e:
             return DownloadResult(
                 doi,
                 DownloadStatus.STORAGE_ERROR,
-                e.strerror,
+                str(e),
                 pdf_path
             )
 
@@ -429,24 +486,4 @@ class TDMClient:
         Args:
             csv_path: Path where CSV file will be saved. Defaults to 'download_results.csv'
         """
-        if not self._download_results:
-            self.logger.info("No results to save")
-            return
-
-        # Create directory if needed
-        directory = os.path.dirname(csv_path)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-
-        with open(csv_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(self.CSV_HEADERS)
-            for result in self._download_results:
-                writer.writerow([
-                    result.doi,
-                    result.status,
-                    result.comment or "",
-                    result.path or ""
-                ])
-        
-        self.logger.info(f"Download results saved to: {csv_path}")
+        TDMReporting.save_download_results(self._download_results, csv_path)

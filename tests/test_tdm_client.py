@@ -117,7 +117,7 @@ def test_unauthorized_access(tdm_client):
     """Test unauthorized IP address scenario."""
 
     result = tdm_client.download_pdf(PAYWALLED_DOI)
-    assert result.status == DownloadStatus.UNAUTHORIZED
+    assert result.status == DownloadStatus.FORBIDDEN
     assert result.path is None
     assert result.size is None
 

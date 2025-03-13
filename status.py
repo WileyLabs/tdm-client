@@ -13,7 +13,7 @@ class DownloadStatus(Enum):
     SEMICOLON_ERROR = auto()          # Known API limitation with semicolons
     
     # Access errors
-    UNAUTHORIZED = auto()             # IP not authorized for TDM access
+    FORBIDDEN = auto()                # IP not authorized for TDM access
     
     # Network/API errors
     NETWORK_ERROR = auto()            # Connection/timeout issues
