@@ -1,6 +1,5 @@
 import logging
-import os
-from tdm_client import TDMClient
+from tdmclient import TDMClient
 
 
 # Setup logging

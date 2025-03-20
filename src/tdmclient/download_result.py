@@ -1,9 +1,12 @@
 """Module containing the DownloadResult dataclass."""
 
+# Standard library imports
 from dataclasses import dataclass
 from typing import Optional
 from http import HTTPStatus
-from download_status import DownloadStatus
+
+# Local imports
+from .download_status import DownloadStatus
 
 @dataclass
 class DownloadResult:

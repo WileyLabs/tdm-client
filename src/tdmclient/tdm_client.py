@@ -14,10 +14,10 @@ from dataclasses import dataclass
 import requests
 
 # Local imports
-from doi_validator import DOIValidator
-from tdm_reporting import TDMReporting
-from download_result import DownloadResult
-from download_status import DownloadStatus
+from .doi_validator import DOIValidator
+from .tdm_reporting import TDMReporting
+from .download_result import DownloadResult
+from .download_status import DownloadStatus
 
 class TDMClient:
     """Client for downloading articles from Wiley's TDM API."""
@@ -45,8 +45,8 @@ class TDMClient:
     CSV_HEADERS: List[str] = ['DOI', 'Status', 'Comment', 'Path']
 
     # Add timeout configuration
-    CONNECT_TIMEOUT = 20  # seconds for initial connection
-    READ_TIMEOUT = 30    # seconds for reading response
+    CONNECT_TIMEOUT:int = 20  # seconds for initial connection
+    READ_TIMEOUT:int = 30    # seconds for reading response
 
     def __init__(self, tdm_token: Optional[str] = None, download_dir: str = 'downloads/'):
         """Initialize the TDMClient with a TDM API token and download directory.
@@ -85,7 +85,7 @@ class TDMClient:
         # Configure initial state
         self._tdm_headers =  {
             self.TDM_TOKEN_HEADER: self._tdm_token,
-            'User-Agent': 'TDMClient/1.0',
+            'User-Agent': 'TDMClient/0.1.0',
         }
         _ = self.my_ip_address  # Fetch IP address
         self.tdm_token = tdm_token  # Will validate UUID format

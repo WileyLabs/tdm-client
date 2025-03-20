@@ -11,6 +11,7 @@
 - [Requirements](#requirements)
 - [Development Setup (Linux)](#development-setup-linux)
 - [Basic Usage](#basic-usage)
+- [Advanced Usage](#advanced-usage)
 - [Troubleshooting](#troubleshooting)
   - [Access Denied](#access-denied)
 - [Contributing](#contributing)
@@ -46,15 +47,41 @@ The TDM Client greatly simplifies the use of the TDM API. All you need to get st
 
 You will require the following:
 
-* A [Python 3.7+](https://www.python.org/downloads/) environment
+* A [Python 3.9+](https://www.python.org/downloads/) environment
 * Python packages:
-  * requests>=2.31.0
+  * requests>=2.32.0
 * A [Wiley Online Library](https://onlinelibrary.wiley.com/) (WOL) Account
 * A TDM API Token, available from the WOL [TDM resources page](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining) using your WOL Account
 * Access to the content you wish to download
 * Access will be determined via your IP address
 
-## Development Setup (Linux)
+
+## Development Setup - Simple (Linux)
+If you wish to just use the TDMClient:
+
+```bash
+# Set your TDM API token (required)
+export TDM_API_TOKEN='your-tdm-api-token'
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install TDMClient directly from GitHub
+pip install "git+https://github.com/WileyLabs/tdm-client.git"
+
+# Verify installation
+pip list | grep tdmclient
+
+# Deactivate virtual environment
+deactivate
+```
+
+We always recommend running in a Virtual Environment so as not to clash with existing System Python libraries. Make sure you are using the client in the same Virtual Environment
+
+## Development Setup - Advanced (Linux)
+
+If you wish to develop directly against the source code:
 
 ```bash
 # Clone the repository
@@ -70,8 +97,11 @@ export TDM_API_TOKEN='your-tdm-api-token'
 python3 -m venv venv
 source venv/bin/activate
 
-# Install requirements
-pip install -r requirements.txt
+# Install package with test dependencies
+pip install -e ".[test]"
+
+# Run tests
+pytest
 
 # Deactivate virtual environment
 deactivate
@@ -88,22 +118,56 @@ chmod +x install.sh
 
 The following example will download multiple Article PDFs to a 'downloads' folder, relative to the current working directory, and name the files `<doi>.pdf`.
 
+First, ensure you're in your virtual environment where tdmclient is installed:
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+```
+
+Then you can use the client in your Python code:
+
 ```python
-from tdm_client import TDMClient
+# filepath: example.py
+from tdmclient import TDMClient
 
-# Configuration
-tdm_api_token = os.getenv('TDM_API_TOKEN')
-
-# Initialize client
-tdm = TDMClient(tdm_api_token)
+# Initialize client (uses TDM_API_TOKEN from environment)
+tdm = TDMClient()
 
 # Download multiple PDFs
-dois = ['10.1155/2019/3692947', '10.1155/2019/3692948']
-pdf_paths = tdm.download_pdfs(dois)
+dois = [
+    '10.1155/2019/3692947',
+    '10.1155/2019/3692948'
+]
+tdm.download_pdfs(dois)
 
+# PDFs will be saved to: ./downloads/<doi>.pdf
+```
+
+### Advanced Usage
+
+You can customize the client behavior:
+
+```python
+from tdmclient import TDMClient
+
+# Custom configuration
+tdm = TDMClient(
+    tdm_token='your-token-here',  # Override environment token
+    download_dir='papers',        # Custom download directory
+    safe_mode=True,              # Enable DOI validation
+    rate_limit=2                 # Seconds between downloads
+)
+
+# Download PDFs with progress tracking
+results = tdm.download_pdfs(['10.1155/2019/3692947'])
+for result in results:
+    print(f"DOI: {result.doi}, Status: {result.status}")
 ```
 
 For more examples, see [tdm_example.py](tdm_example.py).
+
+Note: Always ensure you're running your code in the virtual environment where tdmclient is installed.
 
 ## Troubleshooting
 

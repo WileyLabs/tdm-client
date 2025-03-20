@@ -1,13 +1,15 @@
-import os
 import csv
 import pytest
 from http import HTTPStatus
 from dataclasses import dataclass
 from datetime import datetime
 
-from tdm_client import DownloadResult
-from tdm_reporting import TDMReporting
-from download_status import DownloadStatus
+from tdmclient import (
+    TDMClient,
+    DownloadResult,
+    DownloadStatus,
+    TDMReporting
+)
 
 # Test constants
 TEST_DOI_1 = "10.1002/test1"

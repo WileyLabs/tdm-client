@@ -1,12 +1,15 @@
 """Module for TDM reporting functionality."""
 
+# Standard library imports
 import os
 import csv
 import logging
-from typing import List
 
-from download_status import DownloadStatus
-from download_result import DownloadResult
+# Local imports
+from .download_result import DownloadResult
+from .download_status import DownloadStatus
+
+from typing import List
 
 class TDMReporting:
     """Handles reporting functionality for TDM downloads."""

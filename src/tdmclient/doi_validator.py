@@ -3,6 +3,12 @@ import logging
 import requests
 from http import HTTPStatus
 
+# Third-party imports
+import requests
+
+# Local imports
+from .download_status import DownloadStatus
+
 class DOIValidator:
     """Utility class for DOI validation and formatting."""
 
