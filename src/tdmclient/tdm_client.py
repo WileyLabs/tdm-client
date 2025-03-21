@@ -42,7 +42,6 @@ class TDMClient:
     
     # File handling
     DOI_SEPARATOR: str = "-"  # Used when converting DOI to filename
-    CSV_HEADERS: List[str] = ['DOI', 'Status', 'Comment', 'Path']
 
     # Add timeout configuration
     CONNECT_TIMEOUT:int = 20  # seconds for initial connection
