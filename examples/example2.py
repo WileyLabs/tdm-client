@@ -1,3 +1,4 @@
+# filepath: examples/example2.py
 import logging
 from tdmclient import TDMClient
 
