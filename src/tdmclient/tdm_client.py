@@ -18,6 +18,7 @@ from .doi_validator import DOIValidator
 from .tdm_reporting import TDMReporting
 from .download_result import DownloadResult
 from .download_status import DownloadStatus
+from .ip_utils import IPUtils
 
 class TDMClient:
     """Client for downloading articles from Wiley's TDM API."""
@@ -26,7 +27,6 @@ class TDMClient:
     ENV_TOKEN_KEY: str = 'TDM_API_TOKEN'
     TDM_API_URL: str = 'https://api.wiley.com/onlinelibrary/tdm/v1/articles/'
     TDM_TOKEN_HEADER: str = 'Wiley-TDM-Client-Token'
-    IPIFY_API_URL: str = 'https://api.ipify.org?format=json'
     WOL_PDF_URL: str = "https://onlinelibrary.wiley.com/doi/epdf/"
 
     # Default settings
@@ -71,7 +71,7 @@ class TDMClient:
         self.overwrite_existing_files: bool = True
 
         # Private instance attributes with type hints and defaults (use setters/constructors)
-        self._my_ip_address: str = None # Will be set by property
+
         self._download_dir: str = None  # Will be set by property
         self._tdm_token: str = None    # Will be set by property
         self._tdm_headers: dict[str, str] = {}
@@ -79,13 +79,15 @@ class TDMClient:
         self._rate_limit: float = self.DEFAULT_RATE_LIMIT
         self._download_results: List[DownloadResult] = []
         self._doi_validator:DOIValidator = DOIValidator()
-
+        self._my_ip_address: str = IPUtils.get_ip_address()
+        self.logger.info(f"Your IP address, used to check entitlements: {self._my_ip_address}")
+        
         # Configure initial state
         self._tdm_headers =  {
             self.TDM_TOKEN_HEADER: self._tdm_token,
             'User-Agent': 'TDMClient/0.1.0',
         }
-        _ = self.my_ip_address  # Fetch IP address
+
         self.tdm_token = tdm_token  # Will validate UUID format
         self.download_dir = download_dir
 
@@ -148,26 +150,6 @@ class TDMClient:
             
         self.logger.info(f"Downloading to: {value}")
         self._download_dir = value
-
-    @property
-    def my_ip_address(self) -> Optional[str]:
-        """Get the public IP address, fetching it if not cached.
-
-        Returns:
-            str or None: The public IP address or None if unavailable
-        """
-        if self._my_ip_address is None:
-            try:
-                response = requests.get(self.IPIFY_API_URL)
-                response.raise_for_status()
-                ip_data = response.json()
-                self._my_ip_address = ip_data.get('ip')
-                if self._my_ip_address:
-                    self.logger.info(f"Your IP address, used to check entitlements: {self._my_ip_address}")
-            except requests.RequestException as e:
-                self.logger.error(f"Failed to fetch public IP address: {str(e)}")
-                
-        return self._my_ip_address
 
     def download_pdf(self, doi: str) -> DownloadResult:
         """Download a single article PDF given its DOI.
