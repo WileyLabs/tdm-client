@@ -71,7 +71,6 @@ class TDMClient:
         self.overwrite_existing_files: bool = True
 
         # Private instance attributes with type hints and defaults (use setters/constructors)
-
         self._download_dir: str = None  # Will be set by property
         self._tdm_token: str = None    # Will be set by property
         self._tdm_headers: dict[str, str] = {}
@@ -82,14 +81,13 @@ class TDMClient:
         self._my_ip_address: str = IPUtils.get_ip_address()
         self.logger.info(f"Your IP address, used to check entitlements: {self._my_ip_address}")
         
-        # Configure initial state
+        self.tdm_token = tdm_token  # Will validate UUID format
+        self.download_dir = download_dir
+
         self._tdm_headers =  {
             self.TDM_TOKEN_HEADER: self._tdm_token,
             'User-Agent': 'TDMClient/0.1.0',
         }
-
-        self.tdm_token = tdm_token  # Will validate UUID format
-        self.download_dir = download_dir
 
     @property
     def rate_limit(self) -> float:
@@ -274,7 +272,7 @@ class TDMClient:
             return DownloadResult(
                 doi,
                 DownloadStatus.FORBIDDEN,
-                f"TDM access denied from IP {self.my_ip_address}. Try manually: {self.WOL_PDF_URL}{doi}",
+                f"TDM access denied from IP {self._my_ip_address}. Try manually: {self.WOL_PDF_URL}{doi}",
                 api_status=status
             )
         elif status == HTTPStatus.NOT_FOUND:
