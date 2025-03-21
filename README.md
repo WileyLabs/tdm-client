@@ -1,47 +1,59 @@
 # tdm-client
 
-![Python](https://img.shields.io/badge/python-v3.7+-blue.svg)
+![Python](https://img.shields.io/badge/python-v3.9+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Dependencies](https://img.shields.io/badge/dependencies-requests-orange)
+![Dependencies](https://img.shields.io/badge/dependencies-requests%20%3E%3D%202.32.0-orange)
 
 ## Table of Contents
 - [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
-- [TDM Client](#tdm-client-1)
+- [TDM Client](#tdm-client)
 - [Features](#features)
 - [Requirements](#requirements)
-- [Development Setup (Linux)](#development-setup-linux)
-- [Basic Usage](#basic-usage)
-- [Advanced Usage](#advanced-usage)
+- [Quick Start](#quick-start)
+  - [Install](#install)
+  - [Basic Usage](#basic-usage)
+- [Environment Variables](#environment-variables)
+- [Development](#development)
+  - [Development Setup](#development-setup)
+  - [Running Tests](#running-tests)
 - [Troubleshooting](#troubleshooting)
-  - [Access Denied](#access-denied)
+  - [Access denied](#access-denied)
+  - [Installation Issues](#installation-issues)
 - [Contributing](#contributing)
 - [License](#license)
 
 ## Text and Data Mining (TDM)
 
-Wiley encourages innovative use of the content we publish, and supports customers who wish to perform text and data mining (TDM) on Wiley content. We are committed to developing tools and services that will enable subscribers to carry out TDM in the most efficient and effective manner, as well as to providing straightforward access to content for TDM purposes.
-
-Academic subscribers can perform TDM under license (or in accordance with statutory rights under applicable legislation) on subscribed content for non-commercial purposes at no extra cost.
-
-Corporate subscribers should contact their account manager to discuss options available for content access and delivery. [Learn more about our options for corporate customers.](https://www.wiley.com/corporations/content-licensing/xml-machine-learning)
-
-In order to maximize platform stability and security for all users, access to content for TDM purposes takes place through our API service, rather than through crawling or scraping [Wiley Online Library](https://onlinelibrary.wiley.com/). Academic subscribers can access subscribed content once they have accepted the Wiley click-through TDM license and received an API token.
-
 To learn more about the TDM service and request a TDM Token visit our [TDM resources page](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining)
 
 ## TDM Client
 
-The TDM Client greatly simplifies the use of the TDM API. All you need to get started is a TDM API Token. Currently, we only offer a Python implementation, others may follow in the future depending on demand. You are free to fork this codebase or make pull requests.
+The TDM Client is a Python library (installable via pip) that aims to simplify interaction with Wiley's TDM API. 
 
 ## Features
 
-- Simple Python interface to Wiley's TDM API
-- Download single or multiple PDFs
-- Rate limiting to prevent API overload
-- Comprehensive error handling
-- Logging with configurable levels
-- Support for both single DOIs and bulk downloads
-- Automatic DOI validation via CrossRef
+The TDM Client has the following capabilities
+
+* **PDF Downloads** - Download PDFs from Wiley's TDM API
+  * Single or bulk DOI downloads (DOIs from file)
+  * Configurable download directory
+  * Automatic DOI-based file naming
+* **DOI Validation**
+  * Non-Wiley DOI detection (via CrossRef API)
+  * Invalid DOIs
+  * DOI encoding
+* **API Handling**
+  * Authentication (API Token & IP)
+  * Rate limiting support 
+  * Error handling (e.g. Access denied)
+* **Reporting**
+  * CSV export of download results
+  * Download statistics (success/failure rates)
+  * File sizes and download durations
+* **Efficiency**
+  * API Session handling
+  * Low memory utilisation with PDF streaming
+  * Graceful timeouts
 
 ## Requirements
 
@@ -55,9 +67,11 @@ You will require the following:
 * Access to the content you wish to download
 * Access will be determined via your IP address
 
+## Quick Start
 
-## Development Setup - Simple (Linux)
-If you wish to just use the TDMClient:
+### Install
+
+Install the TDMClient in a Virtual Environment using pip:
 
 ```bash
 # Set your TDM API token (required)
@@ -73,15 +87,64 @@ pip install "git+https://github.com/WileyLabs/tdm-client.git"
 # Verify installation
 pip list | grep tdmclient
 
-# Deactivate virtual environment
+# Deactivate virtual environment (you can keep it open)
 deactivate
 ```
 
-We always recommend running in a Virtual Environment so as not to clash with existing System Python libraries. Make sure you are using the client in the same Virtual Environment
+Note: After installing, remember to activate the virtual environment each time you start a new terminal:
+```bash
+source venv/bin/activate
+```
 
-## Development Setup - Advanced (Linux)
+We always recommend running in a Virtual Environment so as not to clash with existing System Python libraries. 
+
+### Basic Usage
+
+The following example will download multiple Article PDFs to a 'downloads' folder, relative to the current working directory, and name the files `<doi>.pdf`.
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Change to working directory (files will be downloaded relative to here)
+(venv) you@host: cd examples
+(venv) you@host: python3 example1.py 
+```
+
+Then you can use the client in your Python code:
+
+```python
+# filepath: examples/example1.py
+from tdmclient import TDMClient
+
+# Initialize client (uses TDM_API_TOKEN from environment)
+tdm = TDMClient()
+
+# Download multiple PDFs
+dois = [
+    '10.1111/jtsb.12390',
+    '10.1111/jlse.12141'
+]
+tdm.download_pdfs(dois)
+
+# PDFs will be saved to: examples/downloads/<doi>.pdf
+```
+
+See more [examples](examples/).
+
+
+## Environment Variables
+
+The TDMClient uses the following environment variables:
+
+* `TDM_API_TOKEN`: Your TDM API token (required)
+
+
+## Development Setup
 
 If you wish to develop directly against the source code:
+
+### Option 1: Manual Setup
 
 ```bash
 # Clone the repository
@@ -107,67 +170,27 @@ pytest
 deactivate
 ```
 
-Alternatively, download and run ([install.sh](install.sh)). 
+### Option 2: Using Install Script
+
+Alternatively, download and run ([install.sh](scripts/install.sh)).
 
 ```bash
-chmod +x install.sh
+# Download installation scripts
+mkdir -p tdm-scripts && cd tdm-scripts
+curl -O https://raw.githubusercontent.com/WileyLabs/tdm-client/main/scripts/{install,uninstall}.sh
+chmod +x *.sh
+
+# Run installation
 ./install.sh your-tdm-api-token
 ```
 
-## Basic Usage
+# Running Tests
 
-The following example will download multiple Article PDFs to a 'downloads' folder, relative to the current working directory, and name the files `<doi>.pdf`.
-
-First, ensure you're in your virtual environment where tdmclient is installed:
+To run tests, use the following command:
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate
+pytest
 ```
-
-Then you can use the client in your Python code:
-
-```python
-# filepath: example.py
-from tdmclient import TDMClient
-
-# Initialize client (uses TDM_API_TOKEN from environment)
-tdm = TDMClient()
-
-# Download multiple PDFs
-dois = [
-    '10.1155/2019/3692947',
-    '10.1155/2019/3692948'
-]
-tdm.download_pdfs(dois)
-
-# PDFs will be saved to: ./downloads/<doi>.pdf
-```
-
-### Advanced Usage
-
-You can customize the client behavior:
-
-```python
-from tdmclient import TDMClient
-
-# Custom configuration
-tdm = TDMClient(
-    tdm_token='your-token-here',  # Override environment token
-    download_dir='papers',        # Custom download directory
-    safe_mode=True,              # Enable DOI validation
-    rate_limit=2                 # Seconds between downloads
-)
-
-# Download PDFs with progress tracking
-results = tdm.download_pdfs(['10.1155/2019/3692947'])
-for result in results:
-    print(f"DOI: {result.doi}, Status: {result.status}")
-```
-
-For more examples, see [tdm_example.py](tdm_example.py).
-
-Note: Always ensure you're running your code in the virtual environment where tdmclient is installed.
 
 ## Troubleshooting
 
@@ -190,6 +213,15 @@ Example Browser output:
 {
   "ip": "XX.XX.XX.XX"
 }
+```
+
+### Installation Issues
+
+If you encounter issues during installation, ensure you have the correct version of Python and the required packages. You can also try reinstalling the package:
+
+```bash
+pip uninstall tdmclient
+pip install "git+https://github.com/WileyLabs/tdm-client.git"
 ```
 
 ## Contributing
