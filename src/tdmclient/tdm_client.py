@@ -31,7 +31,6 @@ class TDMClient:
 
     # Default settings
     DEFAULT_RATE_LIMIT: float = 1.0 #seconds
-    DEFAULT_IP_ADDRESS: str = "192.168.0.1"
     DEFAULT_DOWNLOAD_DIR: str = "downloads/"
     DEFAULT_RESULTS_FILE: str = "download_results.csv"
     DEFAULT_DOIS_FILE: str = "dois.txt"
@@ -72,12 +71,12 @@ class TDMClient:
         self.overwrite_existing_files: bool = True
 
         # Private instance attributes with type hints and defaults (use setters/constructors)
-        self._download_dir: str = ""
-        self._tdm_token: str = ""
+        self._my_ip_address: str = None # Will be set by property
+        self._download_dir: str = None  # Will be set by property
+        self._tdm_token: str = None    # Will be set by property
         self._tdm_headers: dict[str, str] = {}
         self._tdm_session: requests.Session = requests.Session()
         self._rate_limit: float = self.DEFAULT_RATE_LIMIT
-        self._my_ip_address: str = self.DEFAULT_IP_ADDRESS
         self._download_results: List[DownloadResult] = []
         self._doi_validator:DOIValidator = DOIValidator()
 
