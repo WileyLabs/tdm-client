@@ -1,30 +1,29 @@
-# filepath: examples/example2.py
+"""TDM Client Example 2 - Multiple PDF Downloads
+
+This example demonstrates downloading multiple Open Access Article PDFs.
+Files are saved to the 'downloads' directory relative to the current working directory.
+
+Requirements:
+    - Virtual environment activated
+    - TDM_API_TOKEN environment variable set
+    - tdmclient package installed
+
+Output:
+    - downloads/<doi>.pdf file(s)
+"""
+
 import logging
 from tdmclient import TDMClient
-
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def main():
+# Initialize client (uses TDM_API_TOKEN from environment)
+tdm = TDMClient()
 
-    tdm = TDMClient()
-
-    # Download a single Article PDF to the 'downloads' folder
-    doi = '10.1002/1878-0261.13818'
-    tdm.download_pdf(doi)
-
-    # Download multiple Article PDFs to the 'downloads' folder
-    dois = ['10.1155/adme/9485656', '10.1155/2019/3692947']
-    tdm.download_pdfs(dois)
-
-    # Download multiple Article PDFs, listed in a file, to the 'downloads/oa-pdfs' folder
-    tdm.download_dir = 'downloads/oa-pdfs'
-    tdm.download_pdf(doi)
-    tdm.download_pdfs_from_file('oa-dois.txt')
-
-    # Save the download results to a CSV file
-    tdm.save_download_results()
-
-if __name__ == "__main__":
-    main()
+# Download multiple Article PDFs
+dois = [
+    '10.1111/jtsb.12390',
+    '10.1111/jlse.12141'
+]
+tdm.download_pdfs(dois)
