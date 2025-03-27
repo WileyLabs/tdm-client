@@ -30,6 +30,13 @@ def tdm_client():
     client = TDMClient(download_dir="tests/downloads") # Use default settings. Reads from TDM_API_TOKEN env var
     return client
 
+# Test TDM_API_TOKEN environment variable
+def test_api_token_env_var():
+    """Test reading TDM_API_TOKEN from environment variable."""
+    token = os.environ.get("TDM_API_TOKEN")
+    assert token is not None
+    assert len(token) > 0  
+
 def assert_successful_download(result: DownloadResult, doi: str):
     """Helper function to validate successful download results.
     
