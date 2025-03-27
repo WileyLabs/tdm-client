@@ -10,11 +10,13 @@
 - [Features](#features)
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
+  - [Environment Variables](#environment-variables)
   - [Install](#install)
   - [Basic Usage](#basic-usage)
-- [Environment Variables](#environment-variables)
-- [Development](#development)
-  - [Development Setup](#development-setup)
+- [Development Setup](#development-setup)
+  - [Requirements](#requirements-1)
+  - [Option 1: Manual Setup](#option-1-manual-setup)
+  - [Option 2: Install Script](#option-2-install-script)
   - [Running Tests](#running-tests)
 - [Troubleshooting](#troubleshooting)
   - [Access denied](#access-denied)
@@ -69,14 +71,21 @@ You will require the following:
 
 ## Quick Start
 
-### Install
+### Environment Variables
 
-Install the TDMClient in a Virtual Environment using pip:
+Set the environment variable `TDM_API_TOKEN` to be used by the TDMClient:
 
 ```bash
 # Set your TDM API token (required)
 export TDM_API_TOKEN='your-tdm-api-token'
+echo $TDM_API_TOKEN
+```
 
+### Install
+
+Install the TDMClient in a Virtual Environment using pip. We always recommend running in a Virtual Environment so as not to clash with existing System Python libraries:
+
+```bash
 # Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
@@ -88,61 +97,53 @@ pip install "git+https://github.com/WileyLabs/tdm-client.git"
 pip list | grep tdmclient
 
 # Deactivate virtual environment (you can keep it open)
-deactivate
+# deactivate
 ```
-
-Note: After installing, remember to activate the virtual environment each time you start a new terminal:
-```bash
-source venv/bin/activate
-```
-
-We always recommend running in a Virtual Environment so as not to clash with existing System Python libraries. 
 
 ### Basic Usage
 
-The following example will download multiple Article PDFs to a 'downloads' folder, relative to the current working directory, and name the files `<doi>.pdf`.
+The following example will download a single Open Access Article PDF to a 'downloads' folder,
+relative to your current working directory, and name the file `<doi>`.pdf.
+
+Create example1.py (Copy or [download](examples/example1.py))
+
+```python
+import logging
+from tdmclient import TDMClient
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Initialize client (uses TDM_API_TOKEN from environment)
+tdm = TDMClient()
+
+# Download a single Article PDF
+tdm.download_pdf('10.1111/jtsb.12390')
+```
+
+Execute in your Virtual Environment (important) and observe the downloaded PDF:
 
 ```bash
 # Activate virtual environment
 source venv/bin/activate
 
-# Change to working directory (files will be downloaded relative to here)
-(venv) you@host: cd examples
-(venv) you@host: python3 example1.py 
-```
+# Run example
+(venv) $ python3 example1.py 
 
-Then you can use the client in your Python code:
+# List downloads
+(venv) $ ls -la downloads/
 
-```python
-# filepath: examples/example1.py
-from tdmclient import TDMClient
-
-# Initialize client (uses TDM_API_TOKEN from environment)
-tdm = TDMClient()
-
-# Download multiple PDFs
-dois = [
-    '10.1111/jtsb.12390',
-    '10.1111/jlse.12141'
-]
-tdm.download_pdfs(dois)
-
-# PDFs will be saved to: examples/downloads/<doi>.pdf
+# Deactivate when done
+(venv) $ deactivate
 ```
 
 See more [examples](examples/).
 
-
-## Environment Variables
-
-The TDMClient uses the following environment variables:
-
-* `TDM_API_TOKEN`: Your TDM API token (required)
-
-
 ## Development Setup
 
-If you wish to develop directly against the source code:
+### Requirements:
+- Python 3.9 or higher
+- Git
 
 ### Option 1: Manual Setup
 
@@ -170,7 +171,7 @@ pytest
 deactivate
 ```
 
-### Option 2: Using Install Script
+### Option 2: Install Script
 
 Alternatively, download and run ([install.sh](scripts/install.sh)).
 
@@ -184,7 +185,7 @@ chmod +x *.sh
 ./install.sh your-tdm-api-token
 ```
 
-# Running Tests
+### Running Tests
 
 To run tests, use the following command:
 
