@@ -1,10 +1,13 @@
+# Standard library imports
 import os
-import time
-import pytest
 from unittest.mock import Mock, patch
 
+# Third-party imports
+import pytest
 import requests
 import urllib
+
+# Local imports
 from tdmclient import (
     TDMClient,
     DownloadResult,

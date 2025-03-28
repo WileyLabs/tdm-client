@@ -1,8 +1,11 @@
+# Standard library imports
 import socket
-import pytest
 from unittest.mock import patch
 
+# Third-party imports
 import requests
+
+# Local imports
 from tdmclient.ip_utils import IPUtils
 
 def test_get_ip_address_success():

@@ -1,14 +1,12 @@
 # Standard library imports
 import os
-import csv
 import logging
 import time
 import urllib.parse
-from uuid import UUID
 from http import HTTPStatus
 from typing import Final, List, Optional
 from collections import OrderedDict
-from dataclasses import dataclass
+from uuid import UUID
 
 # Third-party imports
 import requests

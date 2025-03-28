@@ -1,7 +1,7 @@
-import socket
-import requests
 import logging
 from typing import Final, List
+
+import requests
 
 class IPUtils:
     """Utility class for IP address detection using public IP APIs."""

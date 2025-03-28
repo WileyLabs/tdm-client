@@ -2,8 +2,8 @@
 
 # Standard library imports
 from dataclasses import dataclass
-from typing import Optional
 from http import HTTPStatus
+from typing import Optional
 
 # Local imports
 from .download_status import DownloadStatus

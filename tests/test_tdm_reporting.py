@@ -1,11 +1,13 @@
+# Standard library imports
 import csv
-import pytest
+import shutil
 from http import HTTPStatus
-from dataclasses import dataclass
-from datetime import datetime
 
+# Third-party imports
+import pytest
+
+# Local imports
 from tdmclient import (
-    TDMClient,
     DownloadResult,
     DownloadStatus,
     TDMReporting
@@ -102,6 +104,5 @@ def test_save_results_creates_directories(tmp_path, sample_results):
 def cleanup(tmp_path):
     """Clean up test files after each test."""
     yield
-    import shutil
     if tmp_path.exists():
         shutil.rmtree(tmp_path)

@@ -1,14 +1,10 @@
-import re
 import logging
-import requests
+import re
 from http import HTTPStatus
 from typing import Final, Pattern
 
 # Third-party imports
 import requests
-
-# Local imports
-from .download_status import DownloadStatus
 
 class DOIValidator:
     """Utility class for DOI validation and formatting."""
