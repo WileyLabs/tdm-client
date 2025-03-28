@@ -15,6 +15,7 @@ from tdmclient import (
 )
 
 # Test constants
+INVALID_TOKEN = "not-a-uuid"
 DOIS_FILE = "tests/dois.txt"  # Test DOIs file
 DOIS_FILE_COUNT = 2  # Number of DOIs in test file
 NOT_DOI = "not-a-doi"  # Invalid DOI for testing
@@ -32,6 +33,11 @@ def tdm_client():
     """Create a TDMClient instance for testing."""
     client = TDMClient(download_dir="tests/downloads") # Use default settings. Reads from TDM_API_TOKEN env var
     return client
+
+def test_invalid_tdm_token():
+    """Test that invalid UUID tokens are rejected."""
+    with pytest.raises(ValueError, match="Invalid TDM API token format"):
+        TDMClient(tdm_token=INVALID_TOKEN)
 
 # Test TDM_API_TOKEN environment variable
 def test_api_token_env_var():

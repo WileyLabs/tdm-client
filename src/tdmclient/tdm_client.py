@@ -114,18 +114,26 @@ class TDMClient:
         """Get the current TDM API token."""
         return self._tdm_token
 
-    @tdm_token.setter
-    def tdm_token(self, value: UUID):
+    @tdm_token.setter 
+    def tdm_token(self, value: str):
         """Set and validate the TDM API token.
         
         Args:
             value: UUID token from Wiley's TDM service
-        """    
-        self._tdm_token = str(value)
-        # Update only the token header
-        self._tdm_headers[TDMClient.API_TOKEN_HEADER] = self._tdm_token
-        self._tdm_session.headers.update({TDMClient.API_TOKEN_HEADER: self._tdm_token})
-        self.logger.debug("TDM API token updated")
+            
+        Raises:
+            ValueError: If token is not a valid UUID string
+        """
+        try:
+            # Validate UUID format
+            uuid_obj = UUID(str(value))
+            self._tdm_token = str(uuid_obj)
+            # Update only the token header
+            self._tdm_headers[TDMClient.API_TOKEN_HEADER] = self._tdm_token
+            self._tdm_session.headers.update({TDMClient.API_TOKEN_HEADER: self._tdm_token})
+            self.logger.debug("TDM API token updated")
+        except ValueError:
+            raise ValueError(f"Invalid TDM API token format. Must be a valid UUID.")
 
     @property
     def download_dir(self) -> str:
