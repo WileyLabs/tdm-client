@@ -91,13 +91,13 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install TDMClient directly from GitHub
-pip install "git+https://github.com/WileyLabs/tdm-client.git"
+(venv) $ pip install "git+https://github.com/WileyLabs/tdm-client.git"
 
 # Verify installation
-pip list | grep tdmclient
+(venv) $ pip list | grep tdmclient
 
 # Deactivate virtual environment (you can keep it open)
-# deactivate
+(venv) $ deactivate
 ```
 
 ### Basic Usage
@@ -148,6 +148,9 @@ See more [examples](examples/).
 ### Option 1: Manual Setup
 
 ```bash
+# Start in your projects directory
+mkdir -p ~/projects && cd ~/projects
+
 # Clone the repository
 git clone https://github.com/WileyLabs/tdm-client.git
 
@@ -162,13 +165,13 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install package with test dependencies
-pip install -e ".[test]"
+(venv) $ pip install -e ".[test]"
 
 # Run tests
-pytest
+(venv) $ pytest
 
 # Deactivate virtual environment
-deactivate
+(venv) $ deactivate
 ```
 
 ### Option 2: Install Script
@@ -176,13 +179,17 @@ deactivate
 Alternatively, download and run ([install.sh](scripts/install.sh)).
 
 ```bash
+# Start in your projects directory
+mkdir -p ~/projects && cd ~/projects
+
 # Download installation scripts
-mkdir -p tdm-scripts && cd tdm-scripts
 curl -O https://raw.githubusercontent.com/WileyLabs/tdm-client/main/scripts/{install,uninstall}.sh
+
+# Make scripts executable
 chmod +x *.sh
 
 # Run installation
-./install.sh your-tdm-api-token
+source ./install.sh your-tdm-api-token
 ```
 
 ### Running Tests
@@ -190,7 +197,11 @@ chmod +x *.sh
 To run tests, use the following command:
 
 ```bash
-pytest
+# Activate virtual environment
+source venv/bin/activate
+
+# Run tests
+(venv) $ pytest
 ```
 
 ## Troubleshooting
@@ -221,8 +232,20 @@ Example Browser output:
 If you encounter issues during installation, ensure you have the correct version of Python and the required packages. You can also try reinstalling the package:
 
 ```bash
-pip uninstall tdmclient
-pip install "git+https://github.com/WileyLabs/tdm-client.git"
+# Activate virtual environment
+source venv/bin/activate
+
+# Uninstall TDMClient
+(venv) $ pip uninstall tdmclient
+
+# Install TDMClient
+(venv) $ pip install "git+https://github.com/WileyLabs/tdm-client.git"
+
+# Verify installation
+(venv) $ pip list | grep tdmclient
+
+# Deactivate virtual environment
+(venv) $ deactivate
 ```
 
 ## Contributing

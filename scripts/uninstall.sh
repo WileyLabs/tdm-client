@@ -1,11 +1,18 @@
 #!/bin/bash
 
 # TDM Client Uninstallation Script
-# -------------------------------
-# Removes:
-# - Virtual environment
-# - Environment variables
-# - Repository files
+# --------------------------------
+# This script:
+# 1. Removes the TDM API token and TDM_HOME environment variables from ~/.bashrc
+# 2. Deletes the 'tdm-client' directory from the current location
+# 3. Cleans up the Python virtual environment
+#
+# Requirements:
+# - Bash shell
+#
+# Usage:
+#   cd ~/projects/
+#   source ./uninstall.sh
 
 # Exit on error
 set -e
@@ -24,7 +31,7 @@ if [ -n "$VIRTUAL_ENV" ]; then
         echo "Warning: Active virtual environment is not tdmclient's environment"
         echo "Current: $VIRTUAL_ENV"
         echo "Expected: $TDM_HOME/venv"
-        exit 1
+        return 1
     fi
 else
     echo "No active virtual environment found"
@@ -32,7 +39,8 @@ fi
 
 # Remove repository
 echo "Removing tdmclient repository at: $TDM_HOME"
-#rm -rf "$TDM_HOME"
+cd ~
+rm -rf "$TDM_HOME"
 
 # Clean up environment variables last
 unset TDM_API_TOKEN
@@ -41,3 +49,5 @@ sed -i '/TDM_API_TOKEN/d' ~/.bashrc
 sed -i '/TDM_HOME/d' ~/.bashrc
 
 echo "Uninstallation complete! Package environment and variables removed"
+
+return 0
