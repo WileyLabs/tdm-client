@@ -2,6 +2,7 @@ import re
 import logging
 import requests
 from http import HTTPStatus
+from typing import Final, Pattern
 
 # Third-party imports
 import requests
@@ -12,13 +13,13 @@ from .download_status import DownloadStatus
 class DOIValidator:
     """Utility class for DOI validation and formatting."""
 
-    # DOI validation
-    DOI_REGEX: re.Pattern = re.compile(r'^10.\d{4,9}/[-._;()/:<>\[\]A-Z0-9]+$', re.IGNORECASE)
+    # DOI Configuration
+    DOI_REGEX: Final[Pattern] = re.compile(r'^10.\d{4,9}/[-._;()/:<>\[\]A-Z0-9]+$', re.IGNORECASE)
 
-    # CrossRef API configuration
-    CROSSREF_API_URL: str = 'https://api.crossref.org/works'
-    CROSSREF_SELECT: str = 'title'
-    CROSSREF_PUBLISHER: str = 'Wiley'
+    # CrossRef API Configuration
+    CROSSREF_API_URL: Final[str] = 'https://api.crossref.org/works'
+    CROSSREF_SELECT: Final[str] = 'title'
+    CROSSREF_PUBLISHER: Final[str] = 'Wiley'
 
     def __init__(self):
         """Initialize DOIUtils."""

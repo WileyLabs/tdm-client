@@ -4,17 +4,17 @@
 import os
 import csv
 import logging
+from typing import Final, List
 
 # Local imports
 from .download_result import DownloadResult
 from .download_status import DownloadStatus
 
-from typing import List
-
 class TDMReporting:
     """Handles reporting functionality for TDM downloads."""
 
-    CSV_HEADERS: List[str] = [
+    # CSV Configuration
+    CSV_HEADERS: Final[List[str]] = [
         'DOI', 
         'Status', 
         'Comment', 

@@ -1,17 +1,21 @@
 import socket
 import requests
 import logging
-from typing import ClassVar, List
+from typing import Final, List
 
 class IPUtils:
     """Utility class for IP address detection using public IP APIs."""
     
-    DEFAULT_IP: ClassVar[str] = "127.0.0.1"
-    IP_APIS: ClassVar[List[str]] = [
+    # IP Configuration
+    DEFAULT_IP: Final[str] = "127.0.0.1"
+    IP_APIS: Final[List[str]] = [
         "https://api.ipify.org",
         "https://api.my-ip.io/ip",
         "https://checkip.amazonaws.com"
     ]
+
+    # Request Configuration
+    REQUEST_TIMEOUT: Final[int] = 5  # seconds
 
     @staticmethod
     def get_ip_address() -> str:
@@ -24,7 +28,7 @@ class IPUtils:
 
         for api_url in IPUtils.IP_APIS:
             try:
-                response = requests.get(api_url, timeout=5)
+                response = requests.get(api_url, timeout=IPUtils.REQUEST_TIMEOUT)
                 if response.status_code == 200:
                     return response.text.strip()
             except requests.RequestException as e:

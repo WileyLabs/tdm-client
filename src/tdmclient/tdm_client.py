@@ -6,7 +6,7 @@ import time
 import urllib.parse
 from uuid import UUID
 from http import HTTPStatus
-from typing import List, Optional
+from typing import Final, List, Optional
 from collections import OrderedDict
 from dataclasses import dataclass
 
@@ -23,30 +23,29 @@ from .ip_utils import IPUtils
 class TDMClient:
     """Client for downloading articles from Wiley's TDM API."""
 
-    # API URLs and configuration
-    ENV_TOKEN_KEY: str = 'TDM_API_TOKEN'
-    TDM_API_URL: str = 'https://api.wiley.com/onlinelibrary/tdm/v1/articles/'
-    TDM_TOKEN_HEADER: str = 'Wiley-TDM-Client-Token'
-    WOL_PDF_URL: str = "https://onlinelibrary.wiley.com/doi/epdf/"
+    # TDM API constants
+    API_URL: Final[str] = 'https://api.wiley.com/onlinelibrary/tdm/v1/articles/'
+    API_TOKEN_ENV: Final[str] = 'TDM_API_TOKEN'
+    API_TOKEN_HEADER: Final[str] = 'Wiley-TDM-Client-Token'
+    API_USER_AGENT: Final[str] = 'TDMClient/0.1.0'
 
-    # Default settings
-    DEFAULT_RATE_LIMIT: float = 1.0 #seconds
-    DEFAULT_DOWNLOAD_DIR: str = "downloads/"
-    DEFAULT_RESULTS_FILE: str = "download_results.csv"
-    DEFAULT_DOIS_FILE: str = "dois.txt"
-    
-    # HTTP configuration
-    KB: int = 1024
-    CHUNK_SIZE: int = 8 * KB  # 8KB chunks for PDF downloads
-    
-    # File handling
-    DOI_SEPARATOR: str = "-"  # Used when converting DOI to filename
+    # TDM API connection constants
+    API_RATE_LIMIT: Final[float] = 1.0  # seconds
+    API_CONNECTION_TIMEOUT: Final[int] = 5  # seconds for initial connection
+    API_READ_TIMEOUT: Final[int] = 30    # seconds for reading response
+    KB: Final[int] = 1024
+    API_CHUNK_SIZE: Final[int] = 8 * KB  # 8KB chunks for PDF downloads
 
-    # Add timeout configuration
-    CONNECT_TIMEOUT:int = 20  # seconds for initial connection
-    READ_TIMEOUT:int = 30    # seconds for reading response
+    # File handling constants
+    FILE_DOWNLOAD_DIR: Final[str] = "downloads/"
+    FILE_RESULTS: Final[str] = "download_results.csv"
+    FILE_DOIS: Final[str] = "dois.txt"
+    FILE_DOI_SEPARATOR: Final[str] = "-"  # Used when converting DOI to filename
 
-    def __init__(self, tdm_token: Optional[str] = None, download_dir: str = 'downloads/'):
+    # Other constants
+    WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
+
+    def __init__(self, tdm_token: Optional[str] = None, download_dir: str = FILE_DOWNLOAD_DIR):
         """Initialize the TDMClient with a TDM API token and download directory.
 
         Args:
@@ -60,9 +59,9 @@ class TDMClient:
 
         # Get token from environment if not provided
         if tdm_token is None:
-            tdm_token = os.getenv(self.ENV_TOKEN_KEY)
+            tdm_token = os.getenv(TDMClient.API_TOKEN_ENV)
             if not tdm_token:
-                raise ValueError(f"TDM API token not provided and {self.ENV_TOKEN_KEY} environment variable not set")
+                raise ValueError(f"TDM API token not provided and {TDMClient.API_TOKEN_ENV} environment variable not set")
             self.logger.debug("Using TDM API token from environment variable")
 
         # Public attributes
@@ -75,9 +74,9 @@ class TDMClient:
         self._tdm_token: str = None    # Will be set by property
         self._tdm_headers: dict[str, str] = {}
         self._tdm_session: requests.Session = requests.Session()
-        self._rate_limit: float = self.DEFAULT_RATE_LIMIT
+        self._rate_limit: float = TDMClient.API_RATE_LIMIT
         self._download_results: List[DownloadResult] = []
-        self._doi_validator:DOIValidator = DOIValidator()
+        self._doi_validator: DOIValidator = DOIValidator()
         self._my_ip_address: str = IPUtils.get_ip_address()
         self.logger.info(f"Your IP address, used to check entitlements: {self._my_ip_address}")
         
@@ -85,8 +84,8 @@ class TDMClient:
         self.download_dir = download_dir
 
         self._tdm_headers =  {
-            self.TDM_TOKEN_HEADER: self._tdm_token,
-            'User-Agent': 'TDMClient/0.1.0',
+            TDMClient.API_TOKEN_HEADER: self._tdm_token,
+            'User-Agent': TDMClient.API_USER_AGENT,
         }
 
     @property
@@ -108,8 +107,8 @@ class TDMClient:
         Raises:
             ValueError: If value is less than DEFAULT_RATE_LIMIT
         """
-        if value < self.DEFAULT_RATE_LIMIT:
-            raise ValueError(f"Rate limit cannot be below default value: {self.DEFAULT_RATE_LIMIT} seconds")
+        if value < TDMClient.API_RATE_LIMIT:
+            raise ValueError(f"Rate limit cannot be below default value: {TDMClient.API_RATE_LIMIT} seconds")
         self._rate_limit = value
 
     @property
@@ -126,8 +125,8 @@ class TDMClient:
         """    
         self._tdm_token = str(value)
         # Update only the token header
-        self._tdm_headers[self.TDM_TOKEN_HEADER] = self._tdm_token
-        self._tdm_session.headers.update({self.TDM_TOKEN_HEADER: self._tdm_token})
+        self._tdm_headers[TDMClient.API_TOKEN_HEADER] = self._tdm_token
+        self._tdm_session.headers.update({TDMClient.API_TOKEN_HEADER: self._tdm_token})
         self.logger.debug("TDM API token updated")
 
     @property
@@ -191,7 +190,7 @@ class TDMClient:
 
         # Prepare request
         encoded_doi = urllib.parse.quote(doi, safe='')
-        request_url = f"{self.TDM_API_URL}{encoded_doi}"
+        request_url = f"{TDMClient.API_URL}{encoded_doi}"
         self.logger.debug(f"Requesting PDF from: {request_url}")
 
         try:
@@ -199,7 +198,7 @@ class TDMClient:
                 request_url, 
                 allow_redirects=True, 
                 stream=True,
-                timeout=(self.CONNECT_TIMEOUT, self.READ_TIMEOUT),
+                timeout=(TDMClient.API_CONNECTION_TIMEOUT, TDMClient.API_READ_TIMEOUT),
             )
 
             # Log response info for debugging
@@ -272,7 +271,7 @@ class TDMClient:
             return DownloadResult(
                 doi,
                 DownloadStatus.FORBIDDEN,
-                f"TDM access denied from IP {self._my_ip_address}. Try manually: {self.WOL_PDF_URL}{doi}",
+                f"TDM access denied from IP {self._my_ip_address}. Try manually: {TDMClient.WOL_PDF_URL}{doi}",
                 api_status=status
             )
         elif status == HTTPStatus.NOT_FOUND:
@@ -306,7 +305,7 @@ class TDMClient:
                 DownloadStatus.INVALID_CONTENT
             )
 
-        pdf_name = f"{doi.replace('/', self.DOI_SEPARATOR)}.pdf"
+        pdf_name = f"{doi.replace('/', TDMClient.FILE_DOI_SEPARATOR)}.pdf"
         pdf_path = os.path.join(self.download_dir, pdf_name)
 
         if not self.overwrite_existing_files and os.path.exists(pdf_path):
@@ -322,7 +321,7 @@ class TDMClient:
 
         try:
             with open(pdf_path, 'wb') as pdf_file:
-                for chunk in response.iter_content(chunk_size=self.CHUNK_SIZE):
+                for chunk in response.iter_content(chunk_size=TDMClient.API_CHUNK_SIZE):
                     if chunk:
                         pdf_file.write(chunk)
             file_size = self._get_file_size(pdf_path)
@@ -348,7 +347,7 @@ class TDMClient:
         Args:
             file_path: Path to the file
         """
-        return round(os.path.getsize(file_path) / self.KB)
+        return round(os.path.getsize(file_path) / TDMClient.KB)
 
     def download_pdfs(self, dois: List[str]) -> List[DownloadResult]:
         """Download multiple articles given their DOIs.
@@ -371,7 +370,7 @@ class TDMClient:
                 time.sleep(self.rate_limit)
         return results
 
-    def download_pdfs_from_file(self, dois_file_path: str = DEFAULT_DOIS_FILE) -> List[DownloadResult]:
+    def download_pdfs_from_file(self, dois_file_path: str = FILE_DOIS) -> List[DownloadResult]:
         """Download articles listed in a file.
 
         Args:
@@ -452,7 +451,7 @@ class TDMClient:
         """
         return self._download_results.copy()  # Return copy to prevent external modifications.copy()  # Return copy to prevent external modification
 
-    def save_download_results(self, csv_path: str = DEFAULT_RESULTS_FILE) -> None:
+    def save_download_results(self, csv_path: str = FILE_RESULTS) -> None:
         """Save download results to CSV file.
 
         Args:
