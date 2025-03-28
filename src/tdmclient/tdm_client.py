@@ -31,14 +31,14 @@ class TDMClient:
     API_RATE_LIMIT: Final[float] = 1.0  # seconds
     API_CONNECTION_TIMEOUT: Final[int] = 5  # seconds for initial connection
     API_READ_TIMEOUT: Final[int] = 30    # seconds for reading response
-    KB: Final[int] = 1024
-    API_CHUNK_SIZE: Final[int] = 8 * KB  # 8KB chunks for PDF downloads
 
     # File handling constants
     FILE_DOWNLOAD_DIR: Final[str] = "downloads/"
     FILE_RESULTS: Final[str] = "download_results.csv"
     FILE_DOIS: Final[str] = "dois.txt"
     FILE_DOI_SEPARATOR: Final[str] = "-"  # Used when converting DOI to filename
+    KB: Final[int] = 1024
+    FILE_CHUNK_SIZE: Final[int] = 8 * KB  # 8KB chunks for PDF downloads
 
     # Other constants
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
@@ -327,7 +327,7 @@ class TDMClient:
 
         try:
             with open(pdf_path, 'wb') as pdf_file:
-                for chunk in response.iter_content(chunk_size=TDMClient.API_CHUNK_SIZE):
+                for chunk in response.iter_content(chunk_size=TDMClient.FILE_CHUNK_SIZE):
                     if chunk:
                         pdf_file.write(chunk)
             file_size = self._get_file_size(pdf_path)
