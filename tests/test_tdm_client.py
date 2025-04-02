@@ -13,17 +13,18 @@ from tdmclient import (
     DownloadResult,
     DownloadStatus,
 )
+from tdmclient.doi_utils import DOIUtils  # Updated from DOIValidator
 
 # Test constants
 INVALID_TOKEN = "not-a-uuid"
 DOIS_FILE = "tests/dois.txt"  # Test DOIs file
 DOIS_FILE_COUNT = 2  # Number of DOIs in test file
-NOT_DOI = "not-a-doi"  # Invalid DOI for testing
-SEMICOLON_DOI = "10.1002/example;123"  # DOI with semicolon for testing
-OA_DOI = "10.1111/modl.12927"  # Open Access article DOI for testing (small file)
-OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]  # Multiple DOIs for testing
-PAYWALLED_DOI = "10.1112/mtk.70009"  # Paywalled article DOI for testing
-NON_WILEY_DOI = "10.1007/978-3-540-49535-2_14"  # Testing non-Wiley scenarios
+NOT_DOI = "not-a-doi"
+SEMICOLON_DOI = "10.1002/example;123"
+OA_DOI = "10.1111/modl.12927"
+OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]
+PAYWALLED_DOI = "10.1112/mtk.70009"
+NON_WILEY_DOI = "10.1007/978-3-540-49535-2_14"
 
 #TODO Consider skipping validation in some tests (don't need to keep hitting CrossRef etc
 
@@ -224,33 +225,6 @@ def test_invalid_dois_file(tdm_client):
     """Test handling of non-existent DOIs file."""
     with pytest.raises(FileNotFoundError):
         tdm_client.download_pdfs_from_file("nonexistent/file.txt")
-
-def test_filter_and_dedupe_dois(tdm_client):
-    """Test DOI filtering and deduplication."""
-    dois = [
-        None,
-        "",
-        "   ",
-        OA_DOI,
-        OA_DOI,  # Duplicate
-        f"  {OA_DOI}  ",  # Same DOI with whitespace
-        PAYWALLED_DOI
-    ]
-    
-    filtered_dois = tdm_client._filter_and_dedupe_dois(dois)
-    
-    assert len(filtered_dois) == 2
-    assert filtered_dois[0] == OA_DOI
-    assert filtered_dois[1] == PAYWALLED_DOI
-
-def test_filter_and_dedupe_empty_list(tdm_client):
-    """Test filtering empty DOI list."""
-    assert len(tdm_client._filter_and_dedupe_dois([])) == 0
-
-def test_filter_and_dedupe_all_invalid(tdm_client):
-    """Test filtering list with only invalid DOIs."""
-    dois = [None, "", "   "]
-    assert len(tdm_client._filter_and_dedupe_dois(dois)) == 0
 
 # Clean up test files after each test
 @pytest.fixture(autouse=True)

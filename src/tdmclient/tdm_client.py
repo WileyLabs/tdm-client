@@ -12,11 +12,12 @@ from uuid import UUID
 import requests
 
 # Local imports
-from .doi_validator import DOIValidator
 from .tdm_reporting import TDMReporting
 from .download_result import DownloadResult
 from .download_status import DownloadStatus
 from .ip_utils import IPUtils
+from .file_utils import FileUtils
+from .doi_utils import DOIUtils
 
 class TDMClient:
     """Client for downloading articles from Wiley's TDM API."""
@@ -37,8 +38,6 @@ class TDMClient:
     FILE_RESULTS: Final[str] = "download_results.csv"
     FILE_DOIS: Final[str] = "dois.txt"
     FILE_DOI_SEPARATOR: Final[str] = "-"  # Used when converting DOI to filename
-    KB: Final[int] = 1024
-    FILE_CHUNK_SIZE: Final[int] = 8 * KB  # 8KB chunks for PDF downloads
 
     # Other constants
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
@@ -74,7 +73,6 @@ class TDMClient:
         self._tdm_session: requests.Session = requests.Session()
         self._rate_limit: float = TDMClient.API_RATE_LIMIT
         self._download_results: List[DownloadResult] = []
-        self._doi_validator: DOIValidator = DOIValidator()
         self._my_ip_address: str = IPUtils.get_ip_address()
         self.logger.info(f"Your IP address, used to check entitlements: {self._my_ip_address}")
         
@@ -147,10 +145,7 @@ class TDMClient:
         Args:
             value: The relative directory path where downloaded PDFs will be saved
         """
-        if not os.path.exists(value):
-            os.makedirs(value)
-            self.logger.debug(f"Created download directory: {value}")
-            
+        FileUtils.ensure_directory(value)
         self.logger.info(f"Downloading to: {value}")
         self._download_dir = value
 
@@ -243,12 +238,12 @@ class TDMClient:
                     DownloadStatus.SEMICOLON_ERROR,
                     "Known API limitation: DOI contains semicolon"
                 )
-            if not self._doi_validator.check_format(doi):
+            if not DOIUtils.check_format(doi):
                 return DownloadResult(
                     doi,
                     DownloadStatus.INVALID_DOI_FORMAT
                 )
-            if not self._doi_validator.check_crossref(doi):
+            if not DOIUtils.check_crossref(doi):
                 return DownloadResult(
                     doi,
                     DownloadStatus.UNKNOWN_WILEY_DOI_CROSSREF
@@ -315,7 +310,7 @@ class TDMClient:
         pdf_path = os.path.join(self.download_dir, pdf_name)
 
         if not self.overwrite_existing_files and os.path.exists(pdf_path):
-            file_size = self._get_file_size(pdf_path)
+            file_size = FileUtils.get_file_size_kb(pdf_path)
             self.logger.warning(f"PDF already exists: {pdf_path} ({file_size} KB)")
             return DownloadResult(
                 doi,
@@ -326,12 +321,7 @@ class TDMClient:
             )
 
         try:
-            with open(pdf_path, 'wb') as pdf_file:
-                for chunk in response.iter_content(chunk_size=TDMClient.FILE_CHUNK_SIZE):
-                    if chunk:
-                        pdf_file.write(chunk)
-            file_size = self._get_file_size(pdf_path)
-            self.logger.info(f"Downloaded PDF: {pdf_path} ({file_size} KB)")
+            file_size = FileUtils.save_file(response, pdf_path)
             return DownloadResult(
                 doi,
                 DownloadStatus.SUCCESS,
@@ -347,14 +337,6 @@ class TDMClient:
                 pdf_path
             )
 
-    def _get_file_size(self, file_path: str) -> int:
-        """Get the size of a file in kilobytes.
-
-        Args:
-            file_path: Path to the file
-        """
-        return round(os.path.getsize(file_path) / TDMClient.KB)
-
     def download_pdfs(self, dois: List[str]) -> List[DownloadResult]:
         """Download multiple articles given their DOIs.
 
@@ -364,7 +346,7 @@ class TDMClient:
         Returns:
             List[DownloadResult]: List of download results
         """
-        unique_dois = self._filter_and_dedupe_dois(dois)
+        unique_dois = DOIUtils.dedupe(dois)
         results: List[DownloadResult] = []
 
         for doi in unique_dois:
@@ -389,44 +371,14 @@ class TDMClient:
             FileNotFoundError: If the DOIs file doesn't exist
             OSError: If there are permission or other OS-level errors
         """
-        if not os.path.exists(dois_file_path):
-            message = f"DOIs file not found: {dois_file_path}"
-            self.logger.error(message)
-            raise FileNotFoundError(message)
+        dois = FileUtils.read_lines_from_file(dois_file_path)
 
-        dois = []
-        with open(dois_file_path, 'r') as file:
-            for line in file:
-                stripped_line = line.strip()
-                if stripped_line and not stripped_line.startswith('#'):
-                    dois.append(stripped_line)
-
-        if not dois:
-            self.logger.warning(f"No valid DOIs found in file: {dois_file_path}")
+        if len(dois) == 0:
+            self.logger.warning(f"Empty or invalid DOIs file: {dois_file_path}")
             return []
 
         self.logger.info(f"Found {len(dois)} DOIs in {dois_file_path}")
         return self.download_pdfs(dois)
-
-    def _filter_and_dedupe_dois(self, dois: List[str]) -> List[str]:
-        """Filter invalid DOIs and remove duplicates while maintaining order.
-        
-        Args:
-            dois: List of DOIs to filter and deduplicate
-            
-        Returns:
-            List[str]: Filtered and deduplicated DOIs
-        """
-        # Filter None/empty DOIs and clean whitespace
-        valid_dois = [doi.strip() for doi in dois if doi is not None and doi.strip()]
-        # Remove duplicates while maintaining order
-        unique_dois = list(OrderedDict.fromkeys(valid_dois))
-        
-        filtered_count = len(dois) - len(unique_dois)
-        if filtered_count > 0:
-            self.logger.info(f"Filtered out {filtered_count} invalid or duplicate DOIs")
-        
-        return unique_dois
 
     def _add_download_result(self, result: DownloadResult) -> None:
         """Record download result.
