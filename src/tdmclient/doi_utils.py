@@ -10,19 +10,51 @@ import requests
 class DOIUtils:
     """Utility class for DOI operations and validation."""
 
-    # Class-level logger
+    # Class-level logger and session
     _logger = logging.getLogger(__name__)
+    _session: requests.Session = requests.Session()
 
     # DOI Configuration
     DOI_REGEX: Final[Pattern] = re.compile(r'^10.\d{4,9}/[-._;()/:<>\[\]A-Z0-9]+$', re.IGNORECASE)
 
-    # CrossRef API Configuration
-    CROSSREF_API_URL: Final[str] = 'https://api.crossref.org/works'
-    CROSSREF_SELECT: Final[str] = 'title'
-    CROSSREF_PUBLISHER: Final[str] = 'Wiley'
-    
-    # Class-level session for CrossRef API
-    _crossref_session: requests.Session = requests.Session()
+    # DOI.org API Configuration
+    DOI_API_URL: Final[str] = 'https://doi.org/api/handles'
+    DOI_API_TYPE: Final[str] = 'URL'
+    DOI_API_SUCCESS_CODE: Final[int] = 1
+    DOI_API_CONNECTION_TIMEOUT: Final[int] = 5  # seconds
+    DOI_API_READ_TIMEOUT: Final[int] = 10    # seconds
+
+    @staticmethod
+    def is_valid(doi: str) -> bool:
+        """Check if a DOI is valid via doi.org.
+        
+        Args:
+            doi (str): The DOI to check.
+        
+        Returns:
+            bool: True if either:
+                - DOI format and API validation pass
+                - Any error occurs (to avoid false negatives and fail gracefully)
+            False only if DOI format check fails
+        """
+        try:
+            if not DOIUtils.check_format(doi):
+                return False
+            
+            url = f"{DOIUtils.DOI_API_URL}/{doi}?type={DOIUtils.DOI_API_TYPE}"
+            response = DOIUtils._session.get(
+                url, 
+                timeout=(DOIUtils.DOI_API_CONNECTION_TIMEOUT, DOIUtils.DOI_API_READ_TIMEOUT)
+            )
+            
+            if response.status_code == HTTPStatus.OK:
+                metadata = response.json()
+                return metadata.get('responseCode') == DOIUtils.DOI_API_SUCCESS_CODE
+                
+        except Exception as e:
+            DOIUtils._logger.warning(f"Error validating DOI {doi}: {e}")
+            
+        return True  # Return True for any error case
 
     @staticmethod
     def check_format(doi: str) -> bool:
@@ -38,39 +70,7 @@ class DOIUtils:
         if is_valid:
             DOIUtils._logger.debug(f"Valid DOI format: {doi}")
         return is_valid
-
-    @staticmethod
-    def check_crossref(doi: str) -> bool:
-        """Check if DOI is valid using CrossRef API.
-        
-        Args:
-            doi: The DOI to verify
-
-        Returns:
-            bool: True if verified by CrossRef, False otherwise
-
-        Raises:
-            requests.RequestException: If network error occurs during validation
-        """
-        crossref_params = {
-            'select': DOIUtils.CROSSREF_SELECT,
-            'query.publisher-name': DOIUtils.CROSSREF_PUBLISHER,
-            'filter': f'doi:{doi}'
-        }
-
-        response = DOIUtils._crossref_session.get(
-            DOIUtils.CROSSREF_API_URL, 
-            params=crossref_params
-        )
-        
-        if response.status_code != HTTPStatus.OK:
-            return False
-
-        crossref_data = response.json()
-        return (crossref_data.get('status') == 'ok' and
-                crossref_data.get('message') and
-                crossref_data['message'].get('total-results') == 1)
-
+    
     @staticmethod
     def dedupe(dois: List[str]) -> List[str]:
         """Filter invalid DOIs and remove duplicates while maintaining order.

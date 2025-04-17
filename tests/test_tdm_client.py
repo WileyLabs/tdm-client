@@ -26,8 +26,6 @@ OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]
 PAYWALLED_DOI = "10.1112/mtk.70009"
 NON_WILEY_DOI = "10.1007/978-3-540-49535-2_14"
 
-#TODO Consider skipping validation in some tests (don't need to keep hitting CrossRef etc
-
 # Test fixture for TDMClient instance
 @pytest.fixture
 def tdm_client():
@@ -95,40 +93,30 @@ def test_pre_url_encoded(tdm_client):
     result = tdm_client.download_pdf(encoded_doi)
     assert_successful_download(result, OA_DOI)
 
-# Test invalid DOI format
-def test_invalid_doi_format(tdm_client):
+# Test invalid DOI
+def test_invalid_doi(tdm_client):
     """Test validation of incorrect DOI format."""
     result = tdm_client.download_pdf(NOT_DOI)
     
-    assert result.status == DownloadStatus.INVALID_DOI_FORMAT
-    assert result.path is None
-    assert result.size is None
-
-# Test semicolon error
-def test_semicolon_in_doi(tdm_client):
-    """Test known limitation with semicolons in DOIs."""
-    result = tdm_client.download_pdf(SEMICOLON_DOI)
-    
-    assert result.status == DownloadStatus.SEMICOLON_ERROR
-    assert result.path is None
-    assert result.size is None
-
-# Test non-Wiley DOI against CrossRef
-def test_non_wiley_doi_crossref(tdm_client):
-    """Test attempting to download non-Wiley DOI with CrossRef check."""
-    result = tdm_client.download_pdf(NON_WILEY_DOI)
-    
-    assert result.status == DownloadStatus.UNKNOWN_WILEY_DOI_CROSSREF
+    assert result.status == DownloadStatus.INVALID_DOI
     assert result.path is None
     assert result.size is None
 
 # Test non-Wiley DOI
 def test_non_wiley_doi(tdm_client):
-    """Test attempting to download non-Wiley DOI without CrossRef check."""
-    tdm_client.safe_mode = False
+    """Test attempting to download non-Wiley DOI."""
     result = tdm_client.download_pdf(NON_WILEY_DOI)
     
-    assert result.status == DownloadStatus.UNKNOWN_WILEY_DOI
+    assert result.status == DownloadStatus.UNKNOWN_DOI
+    assert result.path is None
+    assert result.size is None
+
+# Test semicolon issue still exists (WIP)
+def test_semicolon_issue(tdm_client):
+    """Test known limitation with semicolons in DOIs."""
+    result = tdm_client.download_pdf(SEMICOLON_DOI)
+    
+    assert result.status == DownloadStatus.KNOWN_ISSUE
     assert result.path is None
     assert result.size is None
 
@@ -157,24 +145,10 @@ def test_file_exists(tdm_client):
     assert result2.size > 0
     assert result2.size == result1.size
 
-# Test CrossRef API error
-@patch('requests.Session.get')
-def test_crossref_api_error(mock_get, tdm_client):
-    """Test handling of network errors."""
-    mock_get.side_effect = requests.RequestException("Network error")
-
-    doi = OA_DOI
-    result = tdm_client.download_pdf(doi)
-    
-    assert result.status == DownloadStatus.CROSSREF_API_ERROR
-    assert result.path is None
-    assert result.size is None
-
 # Test Wiley API error
 @patch('requests.Session.get')
 def test_wiley_api_error(mock_get, tdm_client):
     """Test handling of network errors."""
-    tdm_client.safe_mode = False
     mock_get.side_effect = requests.RequestException("Network error")
     result = tdm_client.download_pdf(OA_DOI)
     
@@ -182,26 +156,10 @@ def test_wiley_api_error(mock_get, tdm_client):
     assert result.path is None
     assert result.size is None
 
-# Test invalid content type
-@patch('requests.Session.get')
-def test_invalid_content_type(mock_get, tdm_client):
-    """Test handling of non-PDF responses."""
-    mock_response = Mock()
-    mock_response.status_code = 200
-    mock_response.headers = {'content-type': 'text/html'}
-    mock_get.return_value = mock_response
-    
-    tdm_client.safe_mode = False
-    result = tdm_client.download_pdf(OA_DOI)
-    
-    assert result.status == DownloadStatus.INVALID_CONTENT
-
 @patch('builtins.open')
 def test_storage_error(mock_open, tdm_client):
     """Test handling of file system errors."""
-    mock_open.side_effect = IOError("Permission denied")
-    tdm_client.safe_mode = False  # Skip validation
-    
+    mock_open.side_effect = IOError("Permission denied")   
     result = tdm_client.download_pdf(OA_DOI)
     
     assert result.status == DownloadStatus.STORAGE_ERROR

@@ -29,7 +29,7 @@ class TDMClient:
     API_USER_AGENT: Final[str] = 'TDMClient/0.1.0'
 
     # TDM API connection constants
-    API_RATE_LIMIT: Final[float] = 1.0  # seconds
+    API_RATE_LIMIT: Final[float] = 5.0  # seconds
     API_CONNECTION_TIMEOUT: Final[int] = 5  # seconds for initial connection
     API_READ_TIMEOUT: Final[int] = 30    # seconds for reading response
 
@@ -63,7 +63,6 @@ class TDMClient:
 
         # Public attributes
         self.download_results_errors_only: bool = False
-        self.safe_mode: bool = True
         self.overwrite_existing_files: bool = True
 
         # Private instance attributes with type hints and defaults (use setters/constructors)
@@ -183,11 +182,11 @@ class TDMClient:
         # Avoid double encoding or DOI validation issues later
         doi = urllib.parse.unquote(doi)
         
-        # Validate if in safe mode
-        if self.safe_mode:
-            validation_result = self._validate_doi(doi)
-            if (validation_result):
-                return validation_result
+        if not DOIUtils.is_valid(doi):
+            return DownloadResult(
+                doi,
+                DownloadStatus.INVALID_DOI
+            )
 
         # Prepare request
         encoded_doi = urllib.parse.quote(doi, safe='')
@@ -222,40 +221,6 @@ class TDMClient:
                 str(e)
             )
 
-    def _validate_doi(self, doi: str) -> Optional[DownloadResult]:
-        """Validate DOI format and existence.
-        
-        Args:
-            doi: The DOI to validate
-            
-        Returns:
-            Optional[DownloadResult]: Error result if validation fails, None if valid
-        """
-        try:
-            if ';' in doi:
-                return DownloadResult(
-                    doi, 
-                    DownloadStatus.SEMICOLON_ERROR,
-                    "Known API limitation: DOI contains semicolon"
-                )
-            if not DOIUtils.check_format(doi):
-                return DownloadResult(
-                    doi,
-                    DownloadStatus.INVALID_DOI_FORMAT
-                )
-            if not DOIUtils.check_crossref(doi):
-                return DownloadResult(
-                    doi,
-                    DownloadStatus.UNKNOWN_WILEY_DOI_CROSSREF
-                )
-            return None
-        except requests.RequestException as e:
-            return DownloadResult(
-                doi,
-                DownloadStatus.CROSSREF_API_ERROR,
-                str(e)
-            )
-
     def _handle_error_status(self, doi: str, status: HTTPStatus, response: requests.Response) -> DownloadResult:
         """Handle non-200 HTTP status codes.
         
@@ -276,10 +241,16 @@ class TDMClient:
                 api_status=status
             )
         elif status == HTTPStatus.NOT_FOUND:
+            if ';' in doi:
+                return DownloadResult(
+                    doi, 
+                    DownloadStatus.KNOWN_ISSUE,
+                    "DOI contains semicolon"
+                )
             return DownloadResult(
                 doi,
-                DownloadStatus.UNKNOWN_WILEY_DOI,
-                "Enable safe_mode to validate DOIs against CrossRef" if not self.safe_mode else None,
+                DownloadStatus.UNKNOWN_DOI,
+                None,
                 api_status=status
             )
         else:
