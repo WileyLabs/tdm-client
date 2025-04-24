@@ -2,27 +2,28 @@ from enum import Enum, auto
 
 class DownloadStatus(Enum):
     """Status codes for download operations."""
+    
     # Success states
-    SUCCESS = auto()                  # Successfully downloaded and saved
-    FILE_EXISTS = auto()              # File already exists locally
+    SUCCESS = auto() 
+    EXISTING_FILE = auto()
     
     # DOI validation errors
-    INVALID_DOI = auto()       # DOI format validation failed
-    UNKNOWN_DOI = auto()        # DOI not found in Wiley
-    KNOWN_ISSUE = auto()          # Known API limitation with semicolons
+    INVALID_DOI = auto()
+    UNKNOWN_DOI = auto()
+    KNOWN_ISSUE = auto()
     
     # Access errors
-    FORBIDDEN = auto()                # IP not authorized for TDM access
+    FORBIDDEN = auto()
     
     # Network/API errors
-    NETWORK_ERROR = auto()            # Connection/timeout issues
-    WILEY_API_ERROR = auto()          # Generic API error response
+    NETWORK_ERROR = auto()
+    WILEY_API_ERROR = auto()
 
-    # Local storage errors
-    STORAGE_ERROR = auto()            # File system issues (permissions, space)
+    # File system issues 
+    STORAGE_ERROR = auto()
     
-    # Content errors
-    INVALID_CONTENT = auto()          # Response not a PDF
+    # Content errors (i.e. not PDF)
+    INVALID_CONTENT = auto()
 
     def __str__(self) -> str:
         """Return a human-readable string."""

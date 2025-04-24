@@ -19,8 +19,8 @@ from tdmclient.doi_utils import DOIUtils  # Updated from DOIValidator
 INVALID_TOKEN = "not-a-uuid"
 DOIS_FILE = "tests/dois.txt"  # Test DOIs file
 DOIS_FILE_COUNT = 2  # Number of DOIs in test file
-NOT_DOI = "not-a-doi"
-SEMICOLON_DOI = "10.1002/example;123"
+NOT_DOI = "not-a-doi;"
+SEMICOLON_DOI = "10.1175/1520-0485(1986)016<1929:CTWOTE>2.0.CO;2"
 OA_DOI = "10.1111/modl.12927"
 OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]
 PAYWALLED_DOI = "10.1112/mtk.70009"
@@ -129,21 +129,19 @@ def test_unauthorized_access(tdm_client):
     assert result.path is None
     assert result.size is None
 
-# Test file already exists
-def test_file_exists(tdm_client):
+# Test skip functionality
+def test_skip_existing_files(tdm_client):
     """Test handling of existing PDF files."""
     # First download
     result1 = tdm_client.download_pdf(OA_DOI)
     assert_successful_download(result1, OA_DOI)
 
     # Download same file again
-    tdm_client.overwrite_existing_files = False
+    tdm_client.skip_existing_files = True
     result2 = tdm_client.download_pdf(OA_DOI)
-    assert result2.status == DownloadStatus.FILE_EXISTS
+    assert result2.status == DownloadStatus.EXISTING_FILE
     assert result2.path is not None
     assert result2.path == result1.path
-    assert result2.size > 0
-    assert result2.size == result1.size
 
 # Test Wiley API error
 @patch('requests.Session.get')

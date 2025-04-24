@@ -63,7 +63,7 @@ class TDMClient:
 
         # Public attributes
         self.download_results_errors_only: bool = False
-        self.overwrite_existing_files: bool = True
+        self.skip_existing_files: bool = True
 
         # Private instance attributes with type hints and defaults (use setters/constructors)
         self._download_dir: str = None  # Will be set by property
@@ -160,13 +160,34 @@ class TDMClient:
         Raises:
             ValueError: If DOI is None or empty string
         """
+        result:DownloadResult = None
+
         if doi is None or not doi.strip():
             raise ValueError("DOI cannot be None or empty")
-            
-        start_time = time.perf_counter()
-        result = self._download_pdf(doi)
-        duration = time.perf_counter() - start_time
-        result.duration = duration
+
+        # Avoid double encoding or DOI validation issues later
+        doi = urllib.parse.unquote(doi)
+        
+        if DOIUtils.is_valid(doi):
+
+            if self.skip_existing_files and FileUtils.is_file(self.download_dir, doi, "pdf"):
+                result = DownloadResult(
+                    doi,
+                    DownloadStatus.EXISTING_FILE,
+                    "",
+                    FileUtils.get_path(self.download_dir, doi, "pdf")
+                )
+            else:
+                start_time = time.perf_counter()
+                result = self._download_pdf(doi)
+                duration = time.perf_counter() - start_time
+                result.duration = duration
+        else:
+            result = DownloadResult(
+                doi,
+                DownloadStatus.INVALID_DOI
+            )
+
         self._add_download_result(result)
         return result
 
@@ -179,14 +200,6 @@ class TDMClient:
         Returns:
             DownloadResult: DownloadResult for the requested Article DOI
         """
-        # Avoid double encoding or DOI validation issues later
-        doi = urllib.parse.unquote(doi)
-        
-        if not DOIUtils.is_valid(doi):
-            return DownloadResult(
-                doi,
-                DownloadStatus.INVALID_DOI
-            )
 
         # Prepare request
         encoded_doi = urllib.parse.quote(doi, safe='')
@@ -277,19 +290,7 @@ class TDMClient:
                 DownloadStatus.INVALID_CONTENT
             )
 
-        pdf_name = f"{doi.replace('/', TDMClient.FILE_DOI_SEPARATOR)}.pdf"
-        pdf_path = os.path.join(self.download_dir, pdf_name)
-
-        if not self.overwrite_existing_files and os.path.exists(pdf_path):
-            file_size = FileUtils.get_file_size_kb(pdf_path)
-            self.logger.warning(f"PDF already exists: {pdf_path} ({file_size} KB)")
-            return DownloadResult(
-                doi,
-                DownloadStatus.FILE_EXISTS,
-                "",
-                pdf_path,
-                file_size
-            )
+        pdf_path = FileUtils.get_path(self.download_dir, doi, "pdf")
 
         try:
             file_size = FileUtils.save_file(response, pdf_path)
@@ -324,9 +325,9 @@ class TDMClient:
             result = self.download_pdf(doi)
             if result:
                 results.append(result)
-            if self.rate_limit > 0:
-                self.logger.debug(f"Rate limiting: sleeping for {self.rate_limit} seconds")
-                time.sleep(self.rate_limit)
+                if result.status != DownloadStatus.EXISTING_FILE:
+                    self.logger.debug(f"Rate limiting: sleeping for {self.rate_limit} seconds")
+                    time.sleep(self.rate_limit)
         return results
 
     def download_pdfs_from_file(self, dois_file_path: str = FILE_DOIS) -> List[DownloadResult]:
@@ -357,17 +358,22 @@ class TDMClient:
         Args:
             result: DownloadResult to add to the list
         """
-        if result.status == DownloadStatus.SUCCESS and self.download_results_errors_only:
-            return
 
-        message = f"{result.status} - DOI: {result.doi}"
+        message_parts = [f"DOI: {result.doi} - {result.status}"]
+        
+        if result.path:
+            message_parts.append(result.path)
         if result.comment:
-            message += f" - {result.comment}"
+            message_parts.append(result.comment)
+            
+        message = " - ".join(message_parts)
 
-        if result.status == DownloadStatus.SUCCESS:
+        if result.status == DownloadStatus.SUCCESS or result.status == DownloadStatus.EXISTING_FILE:
+            if self.download_results_errors_only:
+                return
             self.logger.info(message)
         else:
-            self.logger.error(message)
+            self.logger.error(message) 
 
         self._download_results.append(result) 
 

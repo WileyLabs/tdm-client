@@ -10,6 +10,7 @@ class FileUtils:
 
     KB: Final[int] = 1024
     CHUNK_SIZE: Final[int] = 8 * KB  # 8KB chunks for downloads
+    FILE_SEPARATOR: Final[str] = "-"  # Used when converting special chars to safe filename chars
 
     @staticmethod
     def ensure_directory(directory: str) -> None:
@@ -73,7 +74,7 @@ class FileUtils:
                         FileUtils._logger.debug(f"Download progress: {progress:.1f}% ")
 
         file_size = FileUtils.get_file_size_kb(file_path)
-        FileUtils._logger.info(f"Saved file: {file_path} ({file_size} KB)")
+        FileUtils._logger.debug(f"Saved file: {file_path} ({file_size} KB)")
         return file_size
 
     @staticmethod
@@ -106,3 +107,39 @@ class FileUtils:
 
         FileUtils._logger.debug(f"Read {len(lines)} lines from {file_path}")
         return lines
+
+    @staticmethod
+    def get_path(directory: str, name: str, extension: str) -> str:
+        """Get full file path with safe filename conversion.
+        
+        Args:
+            directory: Directory path
+            name: Base name (e.g., DOI)
+            extension: File extension without dot
+            
+        Returns:
+            str: Full path with safe filename
+            
+        Example:
+            >>> FileUtils.get_path("downloads", "10.1002/smj.123", "pdf")
+            'downloads/10.1002-smj.123.pdf'
+        """
+        # Clean the name by replacing special chars
+        safe_name = name.replace('/', FileUtils.FILE_SEPARATOR)
+        
+        # Construct full path with normalized extension
+        return os.path.join(
+            directory, 
+            f"{safe_name}.{extension.lstrip('.')}"
+        )
+
+    @staticmethod
+    def is_file(directory: str, name: str, extension: str) -> bool:
+        """Check if a file exists in the specified directory."""
+        file_path = FileUtils.get_path(directory, name, extension)
+        exists = os.path.exists(file_path)
+        
+        if exists:
+            FileUtils._logger.debug(f"File exists: {file_path}")
+        
+        return exists
