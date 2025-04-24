@@ -34,7 +34,7 @@ class TDMReporting:
         logger = logging.getLogger(__name__)
 
         if not results or results == []:
-            logger.info("No results to save")
+            logger.info("No download results to save")
             return
 
         # Create directory if needed
