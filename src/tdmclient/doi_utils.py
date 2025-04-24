@@ -49,7 +49,10 @@ class DOIUtils:
             
             if response.status_code == HTTPStatus.OK:
                 metadata = response.json()
-                return metadata.get('responseCode') == DOIUtils.DOI_API_SUCCESS_CODE
+                response_code = metadata.get('responseCode')
+                return response_code == DOIUtils.DOI_API_SUCCESS_CODE 
+            else:
+                return False
                 
         except Exception as e:
             DOIUtils._logger.warning(f"Error validating DOI {doi}: {e}")
