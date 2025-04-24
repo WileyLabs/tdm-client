@@ -1,6 +1,7 @@
 # Standard library imports
 import os
 from unittest.mock import Mock, patch
+from http import HTTPStatus
 
 # Third-party imports
 import pytest
@@ -119,6 +120,7 @@ def test_semicolon_issue(tdm_client):
     assert result.status == DownloadStatus.KNOWN_ISSUE
     assert result.path is None
     assert result.size is None
+    assert result.api_status is HTTPStatus.NOT_FOUND
 
 # Test unauthorized access
 def test_unauthorized_access(tdm_client):

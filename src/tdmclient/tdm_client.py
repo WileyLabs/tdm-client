@@ -258,7 +258,8 @@ class TDMClient:
                 return DownloadResult(
                     doi, 
                     DownloadStatus.KNOWN_ISSUE,
-                    "DOI contains semicolon"
+                    "DOI contains semicolon",
+                    api_status=status
                 )
             return DownloadResult(
                 doi,
