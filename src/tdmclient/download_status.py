@@ -3,27 +3,22 @@ from enum import Enum, auto
 class DownloadStatus(Enum):
     """Status codes for download operations."""
     
-    # Success states
+    # TDM API
     SUCCESS = auto() 
-    EXISTING_FILE = auto()
-    
-    # DOI validation errors
-    INVALID_DOI = auto()
+    FORBIDDEN = auto()
     UNKNOWN_DOI = auto()
     KNOWN_ISSUE = auto()
-    
-    # Access errors
-    FORBIDDEN = auto()
-    
-    # Network/API errors
-    NETWORK_ERROR = auto()
-    WILEY_API_ERROR = auto()
+    API_ERROR = auto()
 
-    # File system issues 
+    # File System
+    EXISTING_FILE = auto()
     STORAGE_ERROR = auto()
     
-    # Content errors (i.e. not PDF)
-    INVALID_CONTENT = auto()
+    # Validation (via 3rd party)
+    INVALID_DOI = auto()
+ 
+    # Network/API errors
+    NETWORK_ERROR = auto()
 
     def __str__(self) -> str:
         """Return a human-readable string."""

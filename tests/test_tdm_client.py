@@ -165,12 +165,12 @@ def test_skip_existing_files(tdm_client):
 
 # Test Wiley API error
 @patch('requests.Session.get')
-def test_wiley_api_error(mock_get, tdm_client):
+def test_network_error(mock_get, tdm_client):
     """Test handling of network errors."""
     mock_get.side_effect = requests.RequestException("Network error")
     result = tdm_client.download_pdf(OA_DOI)
     
-    assert result.status == DownloadStatus.WILEY_API_ERROR
+    assert result.status == DownloadStatus.NETWORK_ERROR
     assert result.path is None
     assert result.size is None
 

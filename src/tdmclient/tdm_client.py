@@ -230,7 +230,7 @@ class TDMClient:
         except requests.RequestException as e:
             return DownloadResult(
                 doi,
-                DownloadStatus.WILEY_API_ERROR,
+                DownloadStatus.NETWORK_ERROR,
                 str(e)
             )
 
@@ -270,7 +270,7 @@ class TDMClient:
         else:
             return DownloadResult(
                 doi,
-                DownloadStatus.WILEY_API_ERROR,
+                DownloadStatus.API_ERROR,
                 response.text,
                 api_status=status
             )
@@ -288,7 +288,8 @@ class TDMClient:
         if not response.headers.get('content-type', '').startswith('application/pdf'):
             return DownloadResult(
                 doi,
-                DownloadStatus.INVALID_CONTENT
+                DownloadStatus.API_ERROR,
+                "Invalid content type. Expected application/pdf",
             )
 
         pdf_path = FileUtils.get_path(self.download_dir, doi, "pdf")
