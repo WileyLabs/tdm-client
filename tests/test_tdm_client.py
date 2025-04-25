@@ -87,6 +87,24 @@ def test_multiple_downloads_from_file(tdm_client):
     for result in results:
         assert_successful_download(result, result.doi)
 
+#Test that callback is called for each download.
+def test_download_callback(tdm_client):
+    mock_callback = Mock()
+    
+    # Mock download_pdf to return success without actual downloads
+    with patch.object(tdm_client, 'download_pdf') as mock_download:
+        mock_download.side_effect = [
+            DownloadResult(OA_DOIS[0], DownloadStatus.SUCCESS),
+            DownloadResult(OA_DOIS[1], DownloadStatus.SUCCESS)
+        ]
+        
+        # Execute
+        results = tdm_client.download_pdfs(OA_DOIS, on_result=mock_callback)
+        
+        # Verify
+        assert len(results) == len(OA_DOIS)
+        assert mock_callback.call_count == len(OA_DOIS)
+
 # Test pre URL encoded download scenario
 def test_pre_url_encoded(tdm_client):
     """Test successful pre URL encoded download. To ensure not double encoding"""

@@ -4,7 +4,7 @@ import logging
 import time
 import urllib.parse
 from http import HTTPStatus
-from typing import Final, List, Optional
+from typing import Callable, Final, List, Optional
 from collections import OrderedDict
 from uuid import UUID
 
@@ -310,11 +310,16 @@ class TDMClient:
                 pdf_path
             )
 
-    def download_pdfs(self, dois: List[str]) -> List[DownloadResult]:
+    def download_pdfs(
+        self, 
+        dois: List[str], 
+        on_result: Optional[Callable[[DownloadResult], None]] = None
+    ) -> List[DownloadResult]:
         """Download multiple articles given their DOIs.
 
         Args:
-            dois: List of DOIs to download. None, empty strings, and duplicates will be filtered.
+            dois: List of DOIs to download
+            on_result: Optional callback function called after each download
 
         Returns:
             List[DownloadResult]: List of download results
@@ -326,16 +331,23 @@ class TDMClient:
             result = self.download_pdf(doi)
             if result:
                 results.append(result)
+                if on_result:
+                    on_result(result)
                 if result.status != DownloadStatus.EXISTING_FILE:
                     self.logger.debug(f"Rate limiting: sleeping for {self.rate_limit} seconds")
                     time.sleep(self.rate_limit)
         return results
 
-    def download_pdfs_from_file(self, dois_file_path: str = FILE_DOIS) -> List[DownloadResult]:
+    def download_pdfs_from_file(
+        self, 
+        dois_file_path: str = FILE_DOIS,
+        on_result: Optional[Callable[[DownloadResult], None]] = None
+    ) -> List[DownloadResult]:
         """Download articles listed in a file.
 
         Args:
             dois_file_path: Path to file containing DOIs, one per line
+            on_result: Optional callback function called after each download
 
         Returns:
             List[DownloadResult]: List of download results
@@ -351,7 +363,7 @@ class TDMClient:
             return []
 
         self.logger.info(f"Found {len(dois)} DOIs in {dois_file_path}")
-        return self.download_pdfs(dois)
+        return self.download_pdfs(dois, on_result=on_result)
 
     def _add_download_result(self, result: DownloadResult) -> None:
         """Record download result.
@@ -360,15 +372,8 @@ class TDMClient:
             result: DownloadResult to add to the list
         """
 
-        message_parts = [f"DOI: {result.doi} - {result.status}"]
+        message = f"DOI: {result.doi} - {result.status}"
         
-        if result.path:
-            message_parts.append(result.path)
-        if result.comment:
-            message_parts.append(result.comment)
-            
-        message = " - ".join(message_parts)
-
         if result.status == DownloadStatus.SUCCESS or result.status == DownloadStatus.EXISTING_FILE:
             if self.download_results_errors_only:
                 return
