@@ -1,10 +1,19 @@
+"""Download status enumeration module.
+
+Defines status codes for download operations with clear categories:
+- TDM API
+- File system operations
+- DOI validation
+- Network issues
+
+"""
 from enum import Enum, auto
 
 class DownloadStatus(Enum):
     """Status codes for download operations."""
-    
+
     # TDM API
-    SUCCESS = auto() 
+    SUCCESS = auto()
     FORBIDDEN = auto()
     UNKNOWN_DOI = auto()
     KNOWN_ISSUE = auto()
@@ -13,10 +22,10 @@ class DownloadStatus(Enum):
     # File System
     EXISTING_FILE = auto()
     STORAGE_ERROR = auto()
-    
+
     # Validation (via 3rd party)
     INVALID_DOI = auto()
- 
+
     # Network/API errors
     NETWORK_ERROR = auto()
 

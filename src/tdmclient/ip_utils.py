@@ -1,3 +1,9 @@
+"""IP address detection utilities.
+
+Detects public IP address using multiple fallback APIs.
+
+"""
+
 import logging
 from typing import Final, List
 
@@ -5,10 +11,10 @@ import requests
 
 class IPUtils:
     """Utility class for IP address detection using public IP APIs."""
-    
+
     # Class-level logger
     _logger = logging.getLogger(__name__)
-    
+
     # IP Configuration
     DEFAULT_IP: Final[str] = "127.0.0.1"
     IP_APIS: Final[List[str]] = [
@@ -32,10 +38,10 @@ class IPUtils:
                 response = requests.get(api_url, timeout=IPUtils.REQUEST_TIMEOUT)
                 if response.status_code == 200:
                     ip = response.text.strip()
-                    IPUtils._logger.debug(f"Detected IP: {ip} from {api_url}")
+                    IPUtils._logger.debug("Detected IP: %s from %s", ip, api_url)
                     return ip
             except requests.RequestException as e:
-                IPUtils._logger.warning(f"IP detection failed for {api_url}: {e}")
+                IPUtils._logger.warning("IP detection failed for %s: %s", api_url, e)
                 continue
 
         IPUtils._logger.error("All IP detection attempts failed")

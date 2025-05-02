@@ -1,0 +1,7 @@
+[MASTER]
+ignore=.git,__pycache__,build,dist
+
+[MESSAGES CONTROL]
+disable=
+    R0902,  # too-many-instance-attributes - okay for tdmclient
+    R0903   # too-few-public-methods - okay for data and utility classes

@@ -1,3 +1,10 @@
+"""Wiley TDM API client for downloading articles.
+
+Manages article downloads, rate limiting, and result tracking.
+Handles authentication, DOI validation, and file management.
+
+"""
+
 # Standard library imports
 import os
 import logging
@@ -5,7 +12,6 @@ import time
 import urllib.parse
 from http import HTTPStatus
 from typing import Callable, Final, List, Optional
-from collections import OrderedDict
 from uuid import UUID
 
 # Third-party imports
@@ -44,9 +50,10 @@ class TDMClient:
 
     def __init__(self, tdm_token: Optional[str] = None, download_dir: str = FILE_DOWNLOAD_DIR):
         """Initialize the TDMClient with a TDM API token and download directory.
+        If None, reads from TDM_API_TOKEN env variable.
 
         Args:
-            tdm_token: UUID token string from Wiley's TDM service. If None, reads from TDM_API_TOKEN env var
+            tdm_token: UUID token string from Wiley's TDM service. 
             download_dir: Directory where PDFs will be saved. Defaults to 'downloads/'
 
         Raises:
@@ -58,7 +65,7 @@ class TDMClient:
         if tdm_token is None:
             tdm_token = os.getenv(TDMClient.API_TOKEN_ENV)
             if not tdm_token:
-                raise ValueError(f"TDM API token not provided and {TDMClient.API_TOKEN_ENV} environment variable not set")
+                raise ValueError(f"{TDMClient.API_TOKEN_ENV} environment variable not set")
             self.logger.debug("Using TDM API token from environment variable")
 
         # Public attributes
@@ -66,15 +73,15 @@ class TDMClient:
         self.skip_existing_files: bool = True
 
         # Private instance attributes with type hints and defaults (use setters/constructors)
-        self._download_dir: str = None  # Will be set by property
-        self._tdm_token: str = None    # Will be set by property
+        self._download_dir: str  # Will be set by property
+        self._tdm_token: str    # Will be set by property
         self._tdm_headers: dict[str, str] = {}
         self._tdm_session: requests.Session = requests.Session()
         self._rate_limit: float = TDMClient.API_RATE_LIMIT
         self._download_results: List[DownloadResult] = []
         self._my_ip_address: str = IPUtils.get_ip_address()
-        self.logger.info(f"Your IP address, used to check entitlements: {self._my_ip_address}")
-        
+        self.logger.info("Your IP address, used to check entitlements: %s", self._my_ip_address)
+
         self.tdm_token = tdm_token  # Will validate UUID format
         self.download_dir = download_dir
 
@@ -103,7 +110,7 @@ class TDMClient:
             ValueError: If value is less than DEFAULT_RATE_LIMIT
         """
         if value < TDMClient.API_RATE_LIMIT:
-            raise ValueError(f"Rate limit cannot be below default value: {TDMClient.API_RATE_LIMIT} seconds")
+            raise ValueError(f"Rate limit is below default: {TDMClient.API_RATE_LIMIT} seconds")
         self._rate_limit = value
 
     @property
@@ -111,7 +118,7 @@ class TDMClient:
         """Get the current TDM API token."""
         return self._tdm_token
 
-    @tdm_token.setter 
+    @tdm_token.setter
     def tdm_token(self, value: str):
         """Set and validate the TDM API token.
         
@@ -129,8 +136,8 @@ class TDMClient:
             self._tdm_headers[TDMClient.API_TOKEN_HEADER] = self._tdm_token
             self._tdm_session.headers.update({TDMClient.API_TOKEN_HEADER: self._tdm_token})
             self.logger.debug("TDM API token updated")
-        except ValueError:
-            raise ValueError(f"Invalid TDM API token format. Must be a valid UUID.")
+        except ValueError as exc:
+            raise ValueError("Invalid TDM API token format. Must be a valid UUID.") from exc
 
     @property
     def download_dir(self) -> str:
@@ -145,7 +152,7 @@ class TDMClient:
             value: The relative directory path where downloaded PDFs will be saved
         """
         FileUtils.ensure_directory(value)
-        self.logger.info(f"Downloading to: {value}")
+        self.logger.info("Downloading to: %s", value)
         self._download_dir = value
 
     def download_pdf(self, doi: str) -> DownloadResult:
@@ -160,14 +167,14 @@ class TDMClient:
         Raises:
             ValueError: If DOI is None or empty string
         """
-        result:DownloadResult = None
+        result:DownloadResult
 
         if doi is None or not doi.strip():
             raise ValueError("DOI cannot be None or empty")
 
         # Avoid double encoding or DOI validation issues later
         doi = urllib.parse.unquote(doi)
-        
+
         if DOIUtils.is_valid(doi):
 
             if self.skip_existing_files and FileUtils.is_file(self.download_dir, doi, "pdf"):
@@ -204,29 +211,29 @@ class TDMClient:
         # Prepare request
         encoded_doi = urllib.parse.quote(doi, safe='')
         request_url = f"{TDMClient.API_URL}{encoded_doi}"
-        self.logger.debug(f"Requesting PDF from: {request_url}")
+        self.logger.debug("Requesting PDF from: %s", request_url)
 
         try:
             response = self._tdm_session.get(
-                request_url, 
-                allow_redirects=True, 
+                request_url,
+                allow_redirects=True,
                 stream=True,
                 timeout=(TDMClient.API_CONNECTION_TIMEOUT, TDMClient.API_READ_TIMEOUT),
             )
 
             # Log response info for debugging
-            self.logger.debug(f"Response headers: {dict(response.headers)}")
+            self.logger.debug("Response headers: %s", dict(response.headers))
 
             status = HTTPStatus(response.status_code)
-            
+
             if status != HTTPStatus.OK:
                 return self._handle_error_status(doi, status, response)
-                    
+
             # Save PDF and include status code
             result = self._save_pdf(response, doi)
             result.api_status = status
             return result
-                
+
         except requests.RequestException as e:
             return DownloadResult(
                 doi,
@@ -234,7 +241,12 @@ class TDMClient:
                 str(e)
             )
 
-    def _handle_error_status(self, doi: str, status: HTTPStatus, response: requests.Response) -> DownloadResult:
+    def _handle_error_status(
+        self,
+        doi: str,
+        status: HTTPStatus,
+        response: requests.Response
+    ) -> DownloadResult:
         """Handle non-200 HTTP status codes.
         
         Args:
@@ -245,18 +257,18 @@ class TDMClient:
         Returns:
             DownloadResult: Error result with appropriate status
         """
-        
         if status == HTTPStatus.FORBIDDEN:
+            pdf_url = f"{TDMClient.WOL_PDF_URL}{doi}"
             return DownloadResult(
                 doi,
                 DownloadStatus.FORBIDDEN,
-                f"TDM access denied from IP {self._my_ip_address}. Try manually: {TDMClient.WOL_PDF_URL}{doi}",
+                f"TDM access denied from IP {self._my_ip_address}. Try manually: {pdf_url}",
                 api_status=status
             )
-        elif status == HTTPStatus.NOT_FOUND:
+        if status == HTTPStatus.NOT_FOUND:
             if ';' in doi:
                 return DownloadResult(
-                    doi, 
+                    doi,
                     DownloadStatus.KNOWN_ISSUE,
                     "DOI contains semicolon",
                     api_status=status
@@ -267,13 +279,13 @@ class TDMClient:
                 None,
                 api_status=status
             )
-        else:
-            return DownloadResult(
-                doi,
-                DownloadStatus.API_ERROR,
-                response.text,
-                api_status=status
-            )
+
+        return DownloadResult(
+            doi,
+            DownloadStatus.API_ERROR,
+            response.text,
+            api_status=status
+        )
 
     def _save_pdf(self, response: requests.Response, doi: str) -> DownloadResult:
         """Save PDF content from response to file.
@@ -312,8 +324,8 @@ class TDMClient:
             )
 
     def download_pdfs(
-        self, 
-        dois: List[str], 
+        self,
+        dois: List[str],
         on_result: Optional[Callable[[DownloadResult], None]] = None
     ) -> List[DownloadResult]:
         """Download multiple articles given their DOIs.
@@ -335,12 +347,12 @@ class TDMClient:
                 if on_result:
                     on_result(result)
                 if result.status != DownloadStatus.EXISTING_FILE:
-                    self.logger.debug(f"Rate limiting: sleeping for {self.rate_limit} seconds")
+                    self.logger.debug("Rate limiting: sleeping for %s seconds", self.rate_limit)
                     time.sleep(self.rate_limit)
         return results
 
     def download_pdfs_from_file(
-        self, 
+        self,
         dois_file_path: str = FILE_DOIS,
         on_result: Optional[Callable[[DownloadResult], None]] = None
     ) -> List[DownloadResult]:
@@ -360,10 +372,10 @@ class TDMClient:
         dois = FileUtils.read_lines_from_file(dois_file_path)
 
         if len(dois) == 0:
-            self.logger.warning(f"Empty or invalid DOIs file: {dois_file_path}")
+            self.logger.warning("Empty or invalid DOIs file: %s", dois_file_path)
             return []
 
-        self.logger.info(f"Found {len(dois)} DOIs in {dois_file_path}")
+        self.logger.info("Found %d DOIs in %s", len(dois), dois_file_path)
         return self.download_pdfs(dois, on_result=on_result)
 
     def _add_download_result(self, result: DownloadResult) -> None:
@@ -374,15 +386,15 @@ class TDMClient:
         """
 
         message = f"DOI: {result.doi} - {result.status}"
-        
-        if result.status == DownloadStatus.SUCCESS or result.status == DownloadStatus.EXISTING_FILE:
+
+        if result.status in (DownloadStatus.SUCCESS, DownloadStatus.EXISTING_FILE):
             if self.download_results_errors_only:
                 return
             self.logger.info(message)
         else:
-            self.logger.error(message) 
+            self.logger.error(message)
 
-        self._download_results.append(result) 
+        self._download_results.append(result)
 
     @property
     def download_results(self) -> List[DownloadResult]:
@@ -391,7 +403,7 @@ class TDMClient:
         Returns:
             List[DownloadResult]: List of all download attempts and their results
         """
-        return self._download_results.copy()  # Return copy to prevent external modifications.copy()  # Return copy to prevent external modification
+        return self._download_results.copy()  # Return copy to prevent external modification
 
     def save_download_results(self, csv_path: str = FILE_RESULTS) -> None:
         """Save download results to CSV file.

@@ -1,3 +1,12 @@
+"""File system utilities for TDM Client.
+
+Handles file downloads, path management, and I/O operations with:
+- Safe filename generation (handles special characters)
+- Chunked downloads with progress tracking
+- Directory and file management
+- Line-based file reading with comment support
+"""
+
 import os
 import logging
 from typing import Final, List
@@ -10,7 +19,48 @@ class FileUtils:
 
     KB: Final[int] = 1024
     CHUNK_SIZE: Final[int] = 8 * KB  # 8KB chunks for downloads
-    FILE_SEPARATOR: Final[str] = "-"  # Used when converting special chars to safe filename chars
+    COMMENT_CHAR: Final[str] = '#'
+
+    # File handling constants
+    FILE_SEPARATOR: Final[str] = "-"
+    UNSAFE_CHARS: Final[set] = {
+        '/', '\\',  # Path separators
+        ':', ';',   # Path/command delimiters
+        '*', '?',   # Wildcards
+        '"', "'",   # Quotes
+        '<', '>',   # Redirections
+        '|',        # Pipe
+        ' ',        # Space
+        '\t',       # Tab
+        '\n', '\r'  # Line endings
+    }
+
+    @staticmethod
+    def make_safe_filename(name: str) -> str:
+        """Convert string to safe filename by replacing unsafe characters.
+        
+        Args:
+            name: Original filename or path component
+            
+        Returns:
+            str: Safe filename with special chars replaced
+            
+        Example:
+            >>> FileUtils.make_safe_filename("10.1002/smj:123")
+            '10.1002-smj-123'
+        """
+        safe_name = name
+        for char in FileUtils.UNSAFE_CHARS:
+            safe_name = safe_name.replace(char, FileUtils.FILE_SEPARATOR)
+
+        # Then collapse multiple separators into one
+        while '--' in safe_name:
+            safe_name = safe_name.replace('--', '-')
+
+        # Remove any leading or trailing separators
+        safe_name = safe_name.strip('-')
+
+        return safe_name
 
     @staticmethod
     def ensure_directory(directory: str) -> None:
@@ -24,7 +74,7 @@ class FileUtils:
         """
         if not os.path.exists(directory):
             os.makedirs(directory)
-            FileUtils._logger.debug(f"Created directory: {directory}")
+            FileUtils._logger.debug("Created directory: %s", directory)
 
     @staticmethod
     def get_file_size_kb(file_path: str) -> int:
@@ -68,23 +118,22 @@ class FileUtils:
                 if chunk:
                     bytes_written += len(chunk)
                     output_file.write(chunk)
-                    
+
                     if total_size > FileUtils.KB * 1024:  # Log progress for files > 1MB
                         progress = (bytes_written / total_size) * 100
-                        FileUtils._logger.debug(f"Download progress: {progress:.1f}% ")
+                        FileUtils._logger.debug("Download progress: %.1f%%", progress)
 
         file_size = FileUtils.get_file_size_kb(file_path)
-        FileUtils._logger.debug(f"Saved file: {file_path} ({file_size} KB)")
+        FileUtils._logger.debug("Saved file: %s (%d KB)", file_path, file_size)
         return file_size
 
     @staticmethod
-    def read_lines_from_file(file_path: str, skip_comments: bool = True, comment_char: str = '#') -> List[str]:
+    def read_lines_from_file(file_path: str, skip_comments: bool = True) -> List[str]:
         """Read non-empty lines from a file.
 
         Args:
             file_path: Path to file to read
             skip_comments: Whether to ignore comment lines (default: True)
-            comment_char: Character that indicates a comment line (default: '#')
 
         Returns:
             List[str]: List of non-empty, non-comment lines with whitespace stripped
@@ -95,17 +144,21 @@ class FileUtils:
         """
         if not os.path.exists(file_path):
             message = f"File not found: {file_path}"
-            FileUtils._logger.error(message)
+            FileUtils._logger.error("File not found: %s", file_path)
             raise FileNotFoundError(message)
 
         lines = []
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', encoding='utf-8') as file:
             for line in file:
                 stripped = line.strip()
-                if stripped and (not skip_comments or not stripped.startswith(comment_char)):
-                    lines.append(stripped)
+                if not stripped:
+                    continue
+                if skip_comments:
+                    if stripped.startswith(FileUtils.COMMENT_CHAR):
+                        continue
+                lines.append(stripped)
 
-        FileUtils._logger.debug(f"Read {len(lines)} lines from {file_path}")
+        FileUtils._logger.debug("Read %d lines from %s", len(lines), file_path)
         return lines
 
     @staticmethod
@@ -124,22 +177,16 @@ class FileUtils:
             >>> FileUtils.get_path("downloads", "10.1002/smj.123", "pdf")
             'downloads/10.1002-smj.123.pdf'
         """
-        # Clean the name by replacing special chars
-        safe_name = name.replace('/', FileUtils.FILE_SEPARATOR)
-        
-        # Construct full path with normalized extension
-        return os.path.join(
-            directory, 
-            f"{safe_name}.{extension.lstrip('.')}"
-        )
+        safe_name = FileUtils.make_safe_filename(name)
+        return os.path.join(directory, f"{safe_name}.{extension.lstrip('.')}")
 
     @staticmethod
     def is_file(directory: str, name: str, extension: str) -> bool:
         """Check if a file exists in the specified directory."""
         file_path = FileUtils.get_path(directory, name, extension)
         exists = os.path.exists(file_path)
-        
+
         if exists:
-            FileUtils._logger.debug(f"File exists: {file_path}")
-        
+            FileUtils._logger.debug("File exists: %s", file_path)
+
         return exists

@@ -42,7 +42,7 @@ class TDMReporting:
         if directory:
             os.makedirs(directory, exist_ok=True)
 
-        with open(csv_path, 'w', newline='') as csvfile:
+        with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(TDMReporting.CSV_HEADERS)
             for result in results:
@@ -55,5 +55,5 @@ class TDMReporting:
                     f"{result.duration:.1f}" if result.duration else "",
                     result.api_status.value if result.api_status else ""
                 ])
-        
-        logger.info(f"Download results saved to: {csv_path}")
+
+        logger.info("Download results saved to: %s", csv_path)

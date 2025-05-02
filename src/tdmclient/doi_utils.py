@@ -1,3 +1,15 @@
+"""DOI validation and processing utilities.
+
+This module provides functionality for validating and processing Digital Object
+Identifiers (DOIs) through the doi.org API. It includes methods for format
+validation, existence checking, and deduplication of DOI lists.
+
+Features:
+    - DOI format validation using regex
+    - DOI existence validation via doi.org API
+    - Deduplication of DOI lists while maintaining order
+"""
+
 import logging
 import re
 from http import HTTPStatus
@@ -40,23 +52,18 @@ class DOIUtils:
         try:
             if not DOIUtils.check_format(doi):
                 return False
-            
             url = f"{DOIUtils.DOI_API_URL}/{doi}?type={DOIUtils.DOI_API_TYPE}"
             response = DOIUtils._session.get(
-                url, 
+                url,
                 timeout=(DOIUtils.DOI_API_CONNECTION_TIMEOUT, DOIUtils.DOI_API_READ_TIMEOUT)
             )
-            
             if response.status_code == HTTPStatus.OK:
                 metadata = response.json()
                 response_code = metadata.get('responseCode')
-                return response_code == DOIUtils.DOI_API_SUCCESS_CODE 
-            else:
-                return False
-                
-        except Exception as e:
-            DOIUtils._logger.warning(f"Error validating DOI {doi}: {e}")
-            
+                return response_code == DOIUtils.DOI_API_SUCCESS_CODE
+            return False
+        except (requests.RequestException, ValueError, KeyError) as e:
+            DOIUtils._logger.warning("Error validating DOI %s: %s", doi, str(e))
         return True  # Return True for any error case
 
     @staticmethod
@@ -71,9 +78,9 @@ class DOIUtils:
         """
         is_valid = bool(DOIUtils.DOI_REGEX.match(doi))
         if is_valid:
-            DOIUtils._logger.debug(f"Valid DOI format: {doi}")
+            DOIUtils._logger.debug("Valid DOI format: %s", doi)
         return is_valid
-    
+
     @staticmethod
     def dedupe(dois: List[str]) -> List[str]:
         """Filter invalid DOIs and remove duplicates while maintaining order.
@@ -88,9 +95,7 @@ class DOIUtils:
         valid_dois = [doi.strip() for doi in dois if doi is not None and doi.strip()]
         # Remove duplicates while maintaining order
         unique_dois = list(OrderedDict.fromkeys(valid_dois))
-        
         filtered_count = len(dois) - len(unique_dois)
         if filtered_count > 0:
-            DOIUtils._logger.info(f"Filtered out {filtered_count} invalid or duplicate DOIs")
-        
+            DOIUtils._logger.debug("Filtered out %d invalid or duplicate DOIs", filtered_count)
         return unique_dois

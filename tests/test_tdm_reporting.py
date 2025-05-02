@@ -1,3 +1,9 @@
+"""Tests for download result reporting functionality.
+
+Tests CSV report generation with sample download results,
+including success and error cases.
+"""
+
 # Standard library imports
 import csv
 import shutil
@@ -19,8 +25,8 @@ TEST_DOI_2 = "10.1002/test2"
 TEST_FILE = "article.pdf"
 TEST_SIZE = 12345
 
-@pytest.fixture
-def sample_results():
+@pytest.fixture(name="results")
+def results_fixture():
     """Create sample DownloadResult objects for testing."""
     return [
         DownloadResult(
@@ -40,23 +46,23 @@ def sample_results():
         )
     ]
 
-def test_save_download_results(tmp_path, sample_results):
+def test_save_download_results(tmp_path, results):
     """Test saving results to CSV with all fields."""
     # Arrange
     csv_path = tmp_path / "results.csv"
-    
+
     # Act
-    TDMReporting.save_download_results(sample_results, str(csv_path))
-    
+    TDMReporting.save_download_results(results, str(csv_path))
+
     # Assert
     assert csv_path.exists()
-    
-    with open(csv_path, newline='') as csvfile:
+
+    with open(csv_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         rows = list(reader)
-        
+
         assert len(rows) == 2
-        
+
         # Check successful download row
         success_row = rows[0]
         assert success_row['DOI'] == TEST_DOI_1
@@ -66,7 +72,7 @@ def test_save_download_results(tmp_path, sample_results):
         assert success_row['Size (KB)'] == str(TEST_SIZE)
         assert success_row['Duration (s)'] == '1.2'
         assert success_row['HTTP Status'] == str(HTTPStatus.OK.value)
-        
+
         # Check forbidden access row
         error_row = rows[1]
         assert error_row['DOI'] == TEST_DOI_2
@@ -81,21 +87,21 @@ def test_save_empty_results(tmp_path):
     """Test handling of empty results list."""
     # Arrange
     csv_path = tmp_path / "empty.csv"
-    
+
     # Act
     TDMReporting.save_download_results([], str(csv_path))
-    
+
     # Assert
     assert not csv_path.exists()
 
-def test_save_results_creates_directories(tmp_path, sample_results):
+def test_save_results_creates_directories(tmp_path, results):
     """Test creation of nested directories."""
     # Arrange
     nested_path = tmp_path / "reports" / "nested" / "results.csv"
-    
+
     # Act
-    TDMReporting.save_download_results(sample_results, str(nested_path))
-    
+    TDMReporting.save_download_results(results, str(nested_path))
+
     # Assert
     assert nested_path.exists()
     assert nested_path.parent.is_dir()

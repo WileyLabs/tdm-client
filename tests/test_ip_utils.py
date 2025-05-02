@@ -1,3 +1,8 @@
+"""Tests for IP address detection functionality.
+
+Tests public IP detection and fallback behavior with mocked responses.
+"""
+
 # Standard library imports
 import socket
 from unittest.mock import patch
