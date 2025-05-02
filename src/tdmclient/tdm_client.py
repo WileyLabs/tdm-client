@@ -48,12 +48,12 @@ class TDMClient:
     # Other constants
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
 
-    def __init__(self, tdm_token: Optional[str] = None, download_dir: str = FILE_DOWNLOAD_DIR):
+    def __init__(self, api_token: Optional[str] = None, download_dir: str = FILE_DOWNLOAD_DIR):
         """Initialize the TDMClient with a TDM API token and download directory.
         If None, reads from TDM_API_TOKEN env variable.
 
         Args:
-            tdm_token: UUID token string from Wiley's TDM service. 
+            api_token: TDM API token string (UUID) from Wiley's TDM service. 
             download_dir: Directory where PDFs will be saved. Defaults to 'downloads/'
 
         Raises:
@@ -61,87 +61,93 @@ class TDMClient:
         """
         self.logger = logging.getLogger(__name__)
 
-        # Get token from environment if not provided
-        if tdm_token is None:
-            tdm_token = os.getenv(TDMClient.API_TOKEN_ENV)
-            if not tdm_token:
-                raise ValueError(f"{TDMClient.API_TOKEN_ENV} environment variable not set")
-            self.logger.debug("Using TDM API token from environment variable")
-
-        # Public attributes
+        # Public attributes (set via public properties)
+        self.download_dir = download_dir
+        self.api_rate_limit = TDMClient.API_RATE_LIMIT
         self.download_results_errors_only: bool = False
         self.skip_existing_files: bool = True
 
-        # Private instance attributes with type hints and defaults (use setters/constructors)
-        self._download_dir: str  # Will be set by property
-        self._tdm_token: str    # Will be set by property
-        self._tdm_headers: dict[str, str] = {}
-        self._tdm_session: requests.Session = requests.Session()
-        self._rate_limit: float = TDMClient.API_RATE_LIMIT
+        # Private attributes
+        self._download_dir: str  # Set by property
+        self._api_rate_limit: float  # Set by property
+        self._api_token: str
+        self._api_headers: dict[str, str] = {}
+        self._api_session: requests.Session
         self._download_results: List[DownloadResult] = []
+
+        self._validate_api_token(api_token)
+        self._create_api_session()
         self._my_ip_address: str = IPUtils.get_ip_address()
+
         self.logger.info("Your IP address, used to check entitlements: %s", self._my_ip_address)
 
-        self.tdm_token = tdm_token  # Will validate UUID format
-        self.download_dir = download_dir
 
-        self._tdm_headers =  {
-            TDMClient.API_TOKEN_HEADER: self._tdm_token,
+    def _validate_api_token(self, api_token: Optional[str]) -> None:
+        """Initialize the TDM API token.
+        
+        Private method to handle token initialization and validation.
+        
+        Args:
+            value: UUID token from Wiley's TDM service or None to use environment
+                
+        Raises:
+            ValueError: If token is not provided, not in environment, or invalid UUID
+        """
+        # Get token from environment if not provided
+        if api_token is None:
+            api_token = os.getenv(TDMClient.API_TOKEN_ENV)
+            if not api_token:
+                raise ValueError(f"{TDMClient.API_TOKEN_ENV} environment variable not set")
+            self.logger.debug("Using TDM API token from environment variable")
+
+        # Validate UUID format
+        try:
+            uuid_obj = UUID(str(api_token))
+            self._api_token = str(uuid_obj)
+        except ValueError as exc:
+            raise ValueError("Invalid TDM API token format. Must be a valid UUID.") from exc
+
+    def _create_api_session(self):
+        """Initialize the TDM API session."""
+        self._api_session = requests.Session()
+        self._api_session.headers.update(
+            {
+            TDMClient.API_TOKEN_HEADER: self._api_token,
             'User-Agent': TDMClient.API_USER_AGENT,
+            'Connection': 'keep-alive',
         }
+        )
 
     @property
-    def rate_limit(self) -> float:
-        """Get the current rate limit.
+    def api_rate_limit(self) -> float:
+        """Get the TDM API rate limit.
 
         Returns:
             float: Current rate limit in seconds
         """
-        return self._rate_limit
+        return self._api_rate_limit
 
-    @rate_limit.setter
-    def rate_limit(self, value: float):
-        """Set the rate limit.
+    @api_rate_limit.setter
+    def api_rate_limit(self, value: float):
+        """Set the TDM API rate limit.
 
         Args:
             value: Rate limit in seconds
 
         Raises:
-            ValueError: If value is less than DEFAULT_RATE_LIMIT
+            ValueError: If value is less than default API_RATE_LIMIT
         """
         if value < TDMClient.API_RATE_LIMIT:
             raise ValueError(f"Rate limit is below default: {TDMClient.API_RATE_LIMIT} seconds")
-        self._rate_limit = value
-
-    @property
-    def tdm_token(self) -> str:
-        """Get the current TDM API token."""
-        return self._tdm_token
-
-    @tdm_token.setter
-    def tdm_token(self, value: str):
-        """Set and validate the TDM API token.
-        
-        Args:
-            value: UUID token from Wiley's TDM service
-            
-        Raises:
-            ValueError: If token is not a valid UUID string
-        """
-        try:
-            # Validate UUID format
-            uuid_obj = UUID(str(value))
-            self._tdm_token = str(uuid_obj)
-            # Update only the token header
-            self._tdm_headers[TDMClient.API_TOKEN_HEADER] = self._tdm_token
-            self._tdm_session.headers.update({TDMClient.API_TOKEN_HEADER: self._tdm_token})
-            self.logger.debug("TDM API token updated")
-        except ValueError as exc:
-            raise ValueError("Invalid TDM API token format. Must be a valid UUID.") from exc
+        self._api_rate_limit = value
 
     @property
     def download_dir(self) -> str:
-        """Get the current download directory."""
+        """Get the current download directory.
+
+        Returns:
+            str: Path to directory where PDFs are saved
+        """
         return self._download_dir
 
     @download_dir.setter
@@ -214,7 +220,7 @@ class TDMClient:
         self.logger.debug("Requesting PDF from: %s", request_url)
 
         try:
-            response = self._tdm_session.get(
+            response = self._api_session.get(
                 request_url,
                 allow_redirects=True,
                 stream=True,
@@ -227,7 +233,7 @@ class TDMClient:
             status = HTTPStatus(response.status_code)
 
             if status != HTTPStatus.OK:
-                return self._handle_error_status(doi, status, response)
+                return self._handle_api_error(doi, status, response)
 
             # Save PDF and include status code
             result = self._save_pdf(response, doi)
@@ -241,7 +247,7 @@ class TDMClient:
                 str(e)
             )
 
-    def _handle_error_status(
+    def _handle_api_error(
         self,
         doi: str,
         status: HTTPStatus,
@@ -347,8 +353,8 @@ class TDMClient:
                 if on_result:
                     on_result(result)
                 if result.status != DownloadStatus.EXISTING_FILE:
-                    self.logger.debug("Rate limiting: sleeping for %s seconds", self.rate_limit)
-                    time.sleep(self.rate_limit)
+                    self.logger.debug("Rate limiting: sleeping for %s seconds", self.api_rate_limit)
+                    time.sleep(self.api_rate_limit)
         return results
 
     def download_pdfs_from_file(

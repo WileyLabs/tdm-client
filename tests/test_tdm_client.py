@@ -43,7 +43,7 @@ def tdm_fixture():
 def test_invalid_tdm_token():
     """Test that invalid UUID tokens are rejected."""
     with pytest.raises(ValueError, match="Invalid TDM API token format"):
-        TDMClient(tdm_token=INVALID_TOKEN)
+        TDMClient(api_token=INVALID_TOKEN)
 
 def test_api_token_env_var():
     """Test reading TDM_API_TOKEN from environment variable."""
