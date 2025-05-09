@@ -66,7 +66,7 @@ def test_save_download_results(tmp_path, results):
         # Check successful download row
         success_row = rows[0]
         assert success_row['DOI'] == TEST_DOI_1
-        assert success_row['Status'] == 'SUCCESS'
+        assert success_row['Status'] == str(DownloadStatus.SUCCESS)
         assert success_row['Comment'] == 'Successfully downloaded'
         assert success_row['Path'] == TEST_FILE
         assert success_row['Size (KB)'] == str(TEST_SIZE)
@@ -76,7 +76,7 @@ def test_save_download_results(tmp_path, results):
         # Check forbidden access row
         error_row = rows[1]
         assert error_row['DOI'] == TEST_DOI_2
-        assert error_row['Status'] == 'FORBIDDEN'
+        assert error_row['Status'] == str(DownloadStatus.FORBIDDEN)
         assert error_row['Comment'] == 'Access denied'
         assert error_row['Path'] == ''
         assert error_row['Size (KB)'] == ''

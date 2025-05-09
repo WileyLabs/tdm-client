@@ -64,7 +64,7 @@ class DOIUtils:
             return False
         except (requests.RequestException, ValueError, KeyError) as e:
             DOIUtils._logger.warning("Error validating DOI %s: %s", doi, str(e))
-        return True  # Return True for any error case
+        return True  # Fail garcefully, as the TDM API will validate the DOI again
 
     @staticmethod
     def check_format(doi: str) -> bool:

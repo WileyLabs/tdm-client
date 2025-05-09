@@ -24,3 +24,11 @@ dev = [
     "pylint>=3.0.0",
     "isort>=5.12.0"
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true

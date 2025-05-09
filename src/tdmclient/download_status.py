@@ -31,4 +31,4 @@ class DownloadStatus(Enum):
 
     def __str__(self) -> str:
         """Return a human-readable string."""
-        return self.name.replace('_', ' ').upper()
+        return self.name.replace('_', ' ').title()

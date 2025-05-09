@@ -32,6 +32,7 @@ OA_DOI = "10.1111/modl.12927"
 OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]
 PAYWALLED_DOI = "10.1112/mtk.70009"
 NON_WILEY_DOI = "10.1007/978-3-540-49535-2_14"
+TEST_TOKEN = os.getenv("TDM_API_TOKEN")
 
 # Test fixture for TDMClient instance
 @pytest.fixture(name="tdm")
@@ -40,16 +41,33 @@ def tdm_fixture():
     tdm_client = TDMClient(download_dir="tests/downloads")
     return tdm_client
 
+
+def test_env_tdm_token():
+    """Test reading TDM_API_TOKEN from environment variable."""
+    token = os.environ.get("TDM_API_TOKEN")
+    assert token is not None
+    assert len(token) > 0
+
+def test_no_tdm_token(monkeypatch):
+    """Test that ValueError is raised when token is not provided and not in environment."""
+    # Clear the environment variable if it exists
+    monkeypatch.delenv(TDMClient.API_TOKEN_ENV, raising=False)
+
+    with pytest.raises(ValueError) as exc_info:
+        TDMClient() # No token provided either
+
+    assert str(exc_info.value) == f"{TDMClient.API_TOKEN_ENV} environment variable not set"
+
 def test_invalid_tdm_token():
     """Test that invalid UUID tokens are rejected."""
     with pytest.raises(ValueError, match="Invalid TDM API token format"):
         TDMClient(api_token=INVALID_TOKEN)
 
-def test_api_token_env_var():
-    """Test reading TDM_API_TOKEN from environment variable."""
-    token = os.environ.get("TDM_API_TOKEN")
-    assert token is not None
-    assert len(token) > 0
+def test_rate_limit_minimum(tdm):
+    """Test that the minimum rate limit is enforced."""
+    message = f"Rate limit is below default: {TDMClient.API_RATE_LIMIT} seconds"
+    with pytest.raises(ValueError, match=message):
+        tdm.api_rate_limit = TDMClient.API_RATE_LIMIT - 1
 
 def assert_successful_download(result: DownloadResult, doi: str):
     """Helper function to validate successful download results.
@@ -89,6 +107,20 @@ def test_multiple_downloads_from_file(tdm):
     for result in results:
         assert_successful_download(result, result.doi)
 
+def test_save_download_results(tdm, tmp_path):
+    """Test saving download results to CSV file."""
+    # First generate some download results
+    result = tdm.download_pdf(OA_DOI)
+    assert_successful_download(result, OA_DOI)
+
+    # Save results to temporary CSV file
+    csv_path = tmp_path / "results.csv"
+    tdm.save_download_results(str(csv_path))
+
+    # Verify file exists and contains data
+    assert csv_path.exists()
+    content = csv_path.read_text()
+    assert OA_DOI in content
 
 def test_download_callback(tdm):
     """Test download callback functionality."""
@@ -114,6 +146,15 @@ def test_pre_url_encoded(tdm):
     result = tdm.download_pdf(encoded_doi)
     assert_successful_download(result, OA_DOI)
 
+@pytest.mark.parametrize("invalid_doi", [
+    "",
+    None,
+    "   "
+])
+def test_blank_doi(tdm, invalid_doi):
+    """Test blank DOI scenario."""
+    with pytest.raises(ValueError, match="DOI cannot be None or empty"):
+        tdm.download_pdf(invalid_doi)
 
 def test_invalid_doi(tdm):
     """Test invalid DOI format."""
@@ -181,9 +222,35 @@ def test_storage_error(mock_open, tdm):
     assert result.path is not None
     assert result.size is None
 
+def test_api_error(tdm):
+    """Test handling of API errors."""
+
+    # Setup mock response
+    mock_response = Mock()
+    status_code = HTTPStatus.INTERNAL_SERVER_ERROR
+    mock_response.status_code = status_code
+    result = tdm._handle_api_error(OA_DOI, status_code, mock_response)
+
+    # Verify results
+    assert result.status == DownloadStatus.API_ERROR
+    assert result.doi == OA_DOI
+    assert result.path is None
+    assert result.size is None
+    assert result.api_status == status_code
+
 def test_empty_doi_list(tdm):
     """Test handling of empty DOI list."""
     results = tdm.download_pdfs([])
+    assert len(results) == 0
+
+def test_empty_dois_file(tdm, tmp_path):
+    """Test handling of empty DOIs file."""
+    # Create an empty file
+    empty_file = tmp_path / "empty.txt"
+    empty_file.write_text("")
+
+    # Test empty file
+    results = tdm.download_pdfs_from_file(str(empty_file))
     assert len(results) == 0
 
 def test_duplicate_dois(tdm):

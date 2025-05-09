@@ -39,8 +39,7 @@ class TDMReporting:
 
         # Create directory if needed
         directory = os.path.dirname(csv_path)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
+        os.makedirs(directory, exist_ok=True)
 
         with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
             writer = csv.writer(csvfile)

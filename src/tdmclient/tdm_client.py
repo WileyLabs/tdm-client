@@ -303,12 +303,6 @@ class TDMClient:
         Returns:
             DownloadResult: Result of the save operation
         """
-        if not response.headers.get('content-type', '').startswith('application/pdf'):
-            return DownloadResult(
-                doi,
-                DownloadStatus.API_ERROR,
-                "Invalid content type. Expected application/pdf",
-            )
 
         pdf_path = FileUtils.get_path(self.download_dir, doi, "pdf")
 

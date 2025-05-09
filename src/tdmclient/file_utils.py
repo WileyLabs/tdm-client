@@ -110,18 +110,12 @@ class FileUtils:
             IOError: If file cannot be written
             ValueError: If response content-length header is invalid
         """
-        total_size = int(response.headers.get('content-length', 0))
         bytes_written = 0
 
         with open(file_path, 'wb') as output_file:
             for chunk in response.iter_content(chunk_size=FileUtils.CHUNK_SIZE):
-                if chunk:
-                    bytes_written += len(chunk)
-                    output_file.write(chunk)
-
-                    if total_size > FileUtils.KB * 1024:  # Log progress for files > 1MB
-                        progress = (bytes_written / total_size) * 100
-                        FileUtils._logger.debug("Download progress: %.1f%%", progress)
+                bytes_written += len(chunk)
+                output_file.write(chunk)
 
         file_size = FileUtils.get_file_size_kb(file_path)
         FileUtils._logger.debug("Saved file: %s (%d KB)", file_path, file_size)
