@@ -36,11 +36,12 @@ TEST_TOKEN = os.getenv("TDM_API_TOKEN")
 
 # Test fixture for TDMClient instance
 @pytest.fixture(name="tdm")
-def tdm_fixture():
-    """Create a TDMClient instance for testing. Reads from TDM_API_TOKEN env var"""
-    tdm_client = TDMClient(download_dir="tests/downloads")
-    return tdm_client
-
+def tdm_fixture(tmp_path):
+    """Create a TDMClient instance for testing.
+    
+    Uses temporary directory for downloads and reads token from TDM_API_TOKEN env var.
+    """
+    return TDMClient(download_dir = tmp_path / "downloads")
 
 def test_env_tdm_token():
     """Test reading TDM_API_TOKEN from environment variable."""
@@ -212,15 +213,20 @@ def test_network_error(mock_get, tdm):
     assert result.path is None
     assert result.size is None
 
-@patch('builtins.open')
-def test_storage_error(mock_open, tdm):
+@patch('pathlib.Path.open')
+def test_storage_error(mock_path_open, tdm):
     """Test handling of file system errors."""
-    mock_open.side_effect = IOError("Permission denied")
+    # Simulate permission error when trying to open file
+    mock_path_open.side_effect = IOError("Permission denied")
+
+    # Attempt download which should trigger storage error
     result = tdm.download_pdf(OA_DOI)
 
+    # Verify error handling
     assert result.status == DownloadStatus.STORAGE_ERROR
     assert result.path is not None
     assert result.size is None
+    assert "Permission denied" in result.comment
 
 def test_api_error(tdm):
     """Test handling of API errors."""

@@ -6,8 +6,8 @@ including success and error cases.
 
 # Standard library imports
 import csv
-import shutil
 from http import HTTPStatus
+from pathlib import Path
 
 # Third-party imports
 import pytest
@@ -22,7 +22,7 @@ from tdmclient import (
 # Test constants
 TEST_DOI_1 = "10.1002/test1"
 TEST_DOI_2 = "10.1002/test2"
-TEST_FILE = "article.pdf"
+TEST_FILE = Path("article.pdf")
 TEST_SIZE = 12345
 
 @pytest.fixture(name="results")
@@ -48,13 +48,11 @@ def results_fixture():
 
 def test_save_download_results(tmp_path, results):
     """Test saving results to CSV with all fields."""
-    # Arrange
+
     csv_path = tmp_path / "results.csv"
 
-    # Act
-    TDMReporting.save_download_results(results, str(csv_path))
+    TDMReporting.save_download_results(results, csv_path)
 
-    # Assert
     assert csv_path.exists()
 
     with open(csv_path, newline='', encoding='utf-8') as csvfile:
@@ -68,7 +66,7 @@ def test_save_download_results(tmp_path, results):
         assert success_row['DOI'] == TEST_DOI_1
         assert success_row['Status'] == str(DownloadStatus.SUCCESS)
         assert success_row['Comment'] == 'Successfully downloaded'
-        assert success_row['Path'] == TEST_FILE
+        assert success_row['Path'] == str(TEST_FILE)
         assert success_row['Size (KB)'] == str(TEST_SIZE)
         assert success_row['Duration (s)'] == '1.2'
         assert success_row['HTTP Status'] == str(HTTPStatus.OK.value)
@@ -85,30 +83,17 @@ def test_save_download_results(tmp_path, results):
 
 def test_save_empty_results(tmp_path):
     """Test handling of empty results list."""
-    # Arrange
-    csv_path = tmp_path / "empty.csv"
 
-    # Act
+    csv_path = tmp_path / "empty.csv"
     TDMReporting.save_download_results([], str(csv_path))
 
-    # Assert
     assert not csv_path.exists()
 
 def test_save_results_creates_directories(tmp_path, results):
     """Test creation of nested directories."""
-    # Arrange
-    nested_path = tmp_path / "reports" / "nested" / "results.csv"
 
-    # Act
+    nested_path = tmp_path / "reports" / "nested" / "results.csv"
     TDMReporting.save_download_results(results, str(nested_path))
 
-    # Assert
     assert nested_path.exists()
     assert nested_path.parent.is_dir()
-
-@pytest.fixture(autouse=True)
-def cleanup(tmp_path):
-    """Clean up test files after each test."""
-    yield
-    if tmp_path.exists():
-        shutil.rmtree(tmp_path)

@@ -5,11 +5,21 @@ Handles file downloads, path management, and I/O operations with:
 - Chunked downloads with progress tracking
 - Directory and file management
 - Line-based file reading with comment support
+
+Path Arguments:
+    All path parameters (type StrPath) accept either:
+    - A String (e.g. "/path/to/file.pdf" or "C:\\path\\to\\file.pdf")
+    - A PathLike object (e.g. Path("/path/to/file.pdf"))
+    Path separators are automatically normalized for the current OS.
 """
 
-import os
+# Standard library imports
 import logging
+from pathlib import Path
 from typing import Final, List
+
+# Local imports
+from .types import StrPath
 
 class FileUtils:
     """Handles all file I/O operations for TDM Client."""
@@ -36,98 +46,129 @@ class FileUtils:
     }
 
     @staticmethod
-    def make_safe_filename(name: str) -> str:
-        """Convert string to safe filename by replacing unsafe characters.
+    def to_path(path: StrPath) -> Path:
+        """Convert any path input to a normalized Path object.
+        
+        Standardizes path handling by:
+        - Converting String or PathLike input to Path object
+        - Normalizes path format (Linux "/" or Windows "\\")
         
         Args:
-            name: Original filename or path component
+            path: Path to file or directory, can be either:
+                - A String (e.g. "/path/to/dir" or "C:\\path\\to\\dir")
+                - A PathLike object (e.g. Path("/path/to/dir"))
             
         Returns:
-            str: Safe filename with special chars replaced
+            Path: Path object with normalized format
             
-        Example:
-            >>> FileUtils.make_safe_filename("10.1002/smj:123")
-            '10.1002-smj-123'
         """
-        safe_name = name
-        for char in FileUtils.UNSAFE_CHARS:
-            safe_name = safe_name.replace(char, FileUtils.FILE_SEPARATOR)
-
-        # Then collapse multiple separators into one
-        while '--' in safe_name:
-            safe_name = safe_name.replace('--', '-')
-
-        # Remove any leading or trailing separators
-        safe_name = safe_name.strip('-')
-
-        return safe_name
+        if isinstance(path, Path):
+            return path
+        return Path(str(path))
 
     @staticmethod
-    def ensure_directory(directory: str) -> None:
+    def to_safe_filename(file_stem: str, file_suffix: str) -> str:
+        """Create a safe filename by replacing unsafe characters.
+    
+        Args:
+            file_stem: Name part of file without extension
+            file_suffix: File extension without dot
+            
+        Returns:
+            str: Safe filename with special chars replaced and extension added
+            
+        Example:
+            >>> FileUtils.to_safe_filename("10.1002/smj:123", "pdf")
+            '10.1002-smj-123.pdf'
+        """
+
+        for char in FileUtils.UNSAFE_CHARS:
+            file_stem = file_stem.replace(char, FileUtils.FILE_SEPARATOR)
+
+        # Then collapse multiple separators into one
+        while '--' in file_stem:
+            file_stem = file_stem.replace('--', '-')
+
+        # Remove any leading or trailing separators
+        file_stem = file_stem.strip('-')
+
+        return f"{file_stem}.{file_suffix}"
+
+    @staticmethod
+    def create_directory(directory_path: StrPath) -> Path:
         """Create directory if it doesn't exist.
 
         Args:
-            directory: Path to directory to create
-
+            directory_path: Path to the directory
+        Returns:
+            Path: Path to the directory created or already existing
         Raises:
             OSError: If directory cannot be created due to permissions or other OS issues
         """
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            FileUtils._logger.debug("Created directory: %s", directory)
+        path = FileUtils.to_path(directory_path)
+
+        # If path looks like a file path, get its directory
+        if path.suffix:  # Has extension
+            path = path.parent
+
+        path.mkdir(parents=True, exist_ok=True)
+        FileUtils._logger.debug("Created directory: %s", path)
+        return path
 
     @staticmethod
-    def get_file_size_kb(file_path: str) -> int:
-        """Get file size in kilobytes.
+    def get_file_size_kb(file_path: StrPath) -> int:
+        """Get file size in kilobytes (KB).
 
         Args:
-            file_path: Path to file to check
+            file_path: Path to file
 
         Returns:
-            int: File size in kilobytes, rounded to nearest KB
+            int: File size in kilobytes (KB)
 
         Raises:
             FileNotFoundError: If file does not exist
             OSError: If file size cannot be determined
         """
-        return round(os.path.getsize(file_path) / FileUtils.KB)
+        path = FileUtils.to_path(file_path)
+        return round(path.stat().st_size / FileUtils.KB)
 
     @staticmethod
-    def save_file(response, file_path: str) -> int:
+    def save_file(response, file_path: StrPath) -> int:
         """Save content from response to file.
 
         Downloads file content in chunks to minimize memory usage.
-        Logs progress for files larger than 1MB.
 
         Args:
             response: requests.Response object with file content
-            file_path: Path where to save the file
+            file_path: Path where the file will be saved
 
         Returns:
-            int: Size of saved file in kilobytes
+            int: Size of saved file in kilobytes (KBs)
 
         Raises:
             IOError: If file cannot be written
             ValueError: If response content-length header is invalid
         """
-        bytes_written = 0
+        path = FileUtils.to_path(file_path)
+        FileUtils.create_directory(path.parent)
 
-        with open(file_path, 'wb') as output_file:
+        bytes_written = 0
+        with path.open('wb') as output_file:
             for chunk in response.iter_content(chunk_size=FileUtils.CHUNK_SIZE):
                 bytes_written += len(chunk)
                 output_file.write(chunk)
 
-        file_size = FileUtils.get_file_size_kb(file_path)
-        FileUtils._logger.debug("Saved file: %s (%d KB)", file_path, file_size)
+        file_size = FileUtils.get_file_size_kb(path)
+        FileUtils._logger.debug("Saved file: %s (%d KB)", path, file_size)
         return file_size
 
     @staticmethod
-    def read_lines_from_file(file_path: str, skip_comments: bool = True) -> List[str]:
+    def read_lines_from_file(file_path: StrPath, skip_comments: bool = True) -> List[str]:
         """Read non-empty lines from a file.
 
         Args:
-            file_path: Path to file to read
-            skip_comments: Whether to ignore comment lines (default: True)
+            file_path: Path to file
+            skip_comments: If True, skip lines starting with COMMENT_CHAR
 
         Returns:
             List[str]: List of non-empty, non-comment lines with whitespace stripped
@@ -136,51 +177,42 @@ class FileUtils:
             FileNotFoundError: If file does not exist
             OSError: If file cannot be read due to permissions
         """
-        if not os.path.exists(file_path):
-            message = f"File not found: {file_path}"
-            FileUtils._logger.error("File not found: %s", file_path)
+        path = FileUtils.to_path(file_path)
+        if not path.exists():
+            message = f"File not found: {path}"
+            FileUtils._logger.error(message)
             raise FileNotFoundError(message)
 
         lines = []
-        with open(file_path, 'r', encoding='utf-8') as file:
+        with path.open('r', encoding='utf-8') as file:
             for line in file:
                 stripped = line.strip()
                 if not stripped:
                     continue
-                if skip_comments:
-                    if stripped.startswith(FileUtils.COMMENT_CHAR):
-                        continue
+                if skip_comments and stripped.startswith(FileUtils.COMMENT_CHAR):
+                    continue
                 lines.append(stripped)
 
-        FileUtils._logger.debug("Read %d lines from %s", len(lines), file_path)
+        FileUtils._logger.debug("Read %d lines from %s", len(lines), path)
         return lines
 
     @staticmethod
-    def get_path(directory: str, name: str, extension: str) -> str:
+    def to_file_path(directory_path: StrPath, file_stem: str, file_suffix: str) -> Path:
         """Get full file path with safe filename conversion.
         
         Args:
-            directory: Directory path
-            name: Base name (e.g., DOI)
-            extension: File extension without dot
+            directory_path: Path to directory
+            file_stem: Name part of the file without extension (e.g. "document" from "document.pdf")
+            file_suffix: File extension without dot (e.g. "pdf" not ".pdf")
             
         Returns:
-            str: Full path with safe filename
+            Path: Full normalized path with safe filename
             
         Example:
-            >>> FileUtils.get_path("downloads", "10.1002/smj.123", "pdf")
-            'downloads/10.1002-smj.123.pdf'
+            >>> FileUtils.to_file_path("downloads", "10.1002/smj.123", "pdf")
+            PosixPath('downloads/10.1002-smj-123.pdf')
         """
-        safe_name = FileUtils.make_safe_filename(name)
-        return os.path.join(directory, f"{safe_name}.{extension.lstrip('.')}")
+        directory = FileUtils.to_path(directory_path)
+        file_name = FileUtils.to_safe_filename(file_stem, file_suffix)
 
-    @staticmethod
-    def is_file(directory: str, name: str, extension: str) -> bool:
-        """Check if a file exists in the specified directory."""
-        file_path = FileUtils.get_path(directory, name, extension)
-        exists = os.path.exists(file_path)
-
-        if exists:
-            FileUtils._logger.debug("File exists: %s", file_path)
-
-        return exists
+        return directory / file_name

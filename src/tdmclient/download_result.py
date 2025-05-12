@@ -2,6 +2,7 @@
 
 # Standard library imports
 from dataclasses import dataclass
+from pathlib import Path
 from http import HTTPStatus
 from typing import Optional
 
@@ -14,7 +15,7 @@ class DownloadResult:
     doi: str
     status: DownloadStatus
     comment: Optional[str] = None
-    path: Optional[str] = None
+    path: Optional[Path] = None
     size: Optional[int] = None
     duration: Optional[float] = None
     api_status: Optional[HTTPStatus] = None

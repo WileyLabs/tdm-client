@@ -13,6 +13,7 @@ import urllib.parse
 from http import HTTPStatus
 from typing import Callable, Final, List, Optional
 from uuid import UUID
+from pathlib import Path
 
 # Third-party imports
 import requests
@@ -24,9 +25,32 @@ from .download_status import DownloadStatus
 from .ip_utils import IPUtils
 from .file_utils import FileUtils
 from .doi_utils import DOIUtils
+from .types import StrPath
 
 class TDMClient:
-    """Client for downloading articles from Wiley's TDM API."""
+    """Client for downloading articles from Wiley's TDM API.
+    
+    Provides functionality for:
+    - Single and batch article downloads via DOI
+    - File management and DOI validation
+    - Rate-limited API requests
+    - Download result tracking and reporting
+    - Configurable download directory
+    
+    Return Types:
+        DownloadResult: Result object containing:
+            - Download status
+            - File path (if successful)
+            - Error message (if failed)
+            - API status code
+            - Duration of download
+
+    Attributes:
+        download_dir (Path): Directory where PDFs are saved
+        api_rate_limit (float): Time in seconds between API requests
+        download_results_errors_only (bool): Only track failed downloads
+        skip_existing_files (bool): Skip downloading if file exists
+    """
 
     # TDM API constants
     API_URL: Final[str] = 'https://api.wiley.com/onlinelibrary/tdm/v1/articles/'
@@ -40,22 +64,25 @@ class TDMClient:
     API_READ_TIMEOUT: Final[int] = 30    # seconds for reading response
 
     # File handling constants
-    FILE_DOWNLOAD_DIR: Final[str] = "downloads/"
-    FILE_RESULTS: Final[str] = "download_results.csv"
-    FILE_DOIS: Final[str] = "dois.txt"
+    FILE_DOWNLOAD_DIR: Final[Path] = Path("downloads/")  # Relative to current working directory
+    FILE_RESULTS: Final[Path] = Path("download_results.csv")
+    FILE_DOIS: Final[Path] = Path("dois.txt")  # Relative to current working directory
     FILE_DOI_SEPARATOR: Final[str] = "-"  # Used when converting DOI to filename
 
     # Other constants
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
 
-    def __init__(self, api_token: Optional[str] = None, download_dir: str = FILE_DOWNLOAD_DIR):
+    def __init__(self, api_token: Optional[str] = None, download_dir: StrPath = FILE_DOWNLOAD_DIR):
         """Initialize the TDMClient with a TDM API token and download directory.
         If None, reads from TDM_API_TOKEN env variable.
 
         Args:
             api_token: TDM API token string (UUID) from Wiley's TDM service. 
-            download_dir: Directory where PDFs will be saved. Defaults to 'downloads/'
-
+            download_dir: Directory where PDFs are saved. Defaults to 'downloads/', can be either:
+                - A String (e.g. "/path/to/dir" or "C:\\path\\to\\dir")
+                - A PathLike object (e.g. Path("/path/to/dir"))
+           Path separators are automatically normalized for the current OS.
+            
         Raises:
             ValueError: If tdm_token is not provided and not found in environment
         """
@@ -68,7 +95,7 @@ class TDMClient:
         self.skip_existing_files: bool = True
 
         # Private attributes
-        self._download_dir: str  # Set by property
+        self._download_dir: Path  # Set by property
         self._api_rate_limit: float  # Set by property
         self._api_token: str
         self._api_headers: dict[str, str] = {}
@@ -142,24 +169,29 @@ class TDMClient:
         self._api_rate_limit = value
 
     @property
-    def download_dir(self) -> str:
+    def download_dir(self) -> Path:
         """Get the current download directory.
 
         Returns:
-            str: Path to directory where PDFs are saved
+            Path: Path to directory where PDFs are saved
         """
         return self._download_dir
 
     @download_dir.setter
-    def download_dir(self, value: str):
+    def download_dir(self, download_dir: StrPath):
         """Set the download directory and ensure it exists.
 
         Args:
-            value: The relative directory path where downloaded PDFs will be saved
+            download_dir: Directory where PDFs are saved. Defaults to 'downloads/', can be either:
+                - A String (e.g. "/path/to/dir" or "C:\\path\\to\\dir")
+                - A PathLike object (e.g. Path("/path/to/dir"))
+           Path separators are automatically normalized for the current OS.
+        Raises:
+            OSError: If directory cannot be created due to permissions or other OS issues                
         """
-        FileUtils.ensure_directory(value)
-        self.logger.info("Downloading to: %s", value)
-        self._download_dir = value
+        path = FileUtils.create_directory(download_dir)
+        self._download_dir = path
+        self.logger.info("Downloading to: %s", path)
 
     def download_pdf(self, doi: str) -> DownloadResult:
         """Download a single article PDF given its DOI.
@@ -173,7 +205,7 @@ class TDMClient:
         Raises:
             ValueError: If DOI is None or empty string
         """
-        result:DownloadResult
+        result = None
 
         if doi is None or not doi.strip():
             raise ValueError("DOI cannot be None or empty")
@@ -182,24 +214,26 @@ class TDMClient:
         doi = urllib.parse.unquote(doi)
 
         if DOIUtils.is_valid(doi):
-
-            if self.skip_existing_files and FileUtils.is_file(self.download_dir, doi, "pdf"):
-                result = DownloadResult(
-                    doi,
-                    DownloadStatus.EXISTING_FILE,
-                    "",
-                    FileUtils.get_path(self.download_dir, doi, "pdf")
-                )
-            else:
-                start_time = time.perf_counter()
-                result = self._download_pdf(doi)
-                duration = time.perf_counter() - start_time
-                result.duration = duration
+            if self.skip_existing_files:
+                file_path = FileUtils.to_file_path(self.download_dir, doi, "pdf")
+                if file_path.exists():
+                    result = DownloadResult(
+                        doi,
+                        DownloadStatus.EXISTING_FILE,
+                        "",
+                        file_path
+                    )
         else:
             result = DownloadResult(
                 doi,
                 DownloadStatus.INVALID_DOI
             )
+
+        if result is None: # No issues, proceed with download
+            start_time = time.perf_counter()
+            result = self._download_pdf(doi)
+            duration = time.perf_counter() - start_time
+            result.duration = duration
 
         self._add_download_result(result)
         return result
@@ -304,7 +338,7 @@ class TDMClient:
             DownloadResult: Result of the save operation
         """
 
-        pdf_path = FileUtils.get_path(self.download_dir, doi, "pdf")
+        pdf_path = FileUtils.to_file_path(self.download_dir, doi, "pdf")
 
         try:
             file_size = FileUtils.save_file(response, pdf_path)
@@ -353,13 +387,13 @@ class TDMClient:
 
     def download_pdfs_from_file(
         self,
-        dois_file_path: str = FILE_DOIS,
+        dois_file_path: StrPath = FILE_DOIS,
         on_result: Optional[Callable[[DownloadResult], None]] = None
     ) -> List[DownloadResult]:
         """Download articles listed in a file.
 
         Args:
-            dois_file_path: Path to file containing DOIs, one per line
+            dois_file_path: Path to text file containing DOIs, one per line. Defaults to dois.txt
             on_result: Optional callback function called after each download
 
         Returns:
@@ -405,7 +439,7 @@ class TDMClient:
         """
         return self._download_results.copy()  # Return copy to prevent external modification
 
-    def save_download_results(self, csv_path: str = FILE_RESULTS) -> None:
+    def save_download_results(self, csv_path: StrPath = FILE_RESULTS) -> None:
         """Save download results to CSV file.
 
         Args:
