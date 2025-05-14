@@ -11,8 +11,8 @@ import pytest
 from tdmclient.file_utils import FileUtils
 
 # Test constants
-TEST_DIR = "test/dir"
-TEST_FILE = "test.txt"
+TEST_DIR = Path("test") / "dir"
+TEST_FILE = Path("test.txt")
 TEST_CONTENT = "line1\n#comment\nline2\n\n  line3  \n"
 
 def test_create_directory_with_path(tmp_path):
@@ -28,18 +28,6 @@ def test_create_directory_with_string(tmp_path):
     FileUtils.create_directory(path)
     assert Path(path).exists()
     assert Path(path).is_dir()
-
-def test_create_directory_with_windows_path(tmp_path):
-    """Test directory creation with Windows-style path string."""
-    # Windows path with backslashes
-    win_path = str(tmp_path / TEST_DIR).replace('/', '\\')
-    created_path = FileUtils.create_directory(win_path)
-    
-    # Verify path was normalized and directory exists
-    assert created_path.exists()
-    assert created_path.is_dir()
-    # Verify returned path is a Path object using OS-specific separators
-    assert isinstance(created_path, Path)
 
 def test_get_file_size_kb(tmp_path):
     """Test file size calculation."""
@@ -86,21 +74,21 @@ def test_read_lines_with_comments(tmp_path):
 
 def test_read_lines_nonexistent():
     """Test reading from non-existent file."""
+    nonexistent = Path("nonexistent.txt")
     with pytest.raises(FileNotFoundError):
-        FileUtils.read_lines_from_file("nonexistent.txt")
+        FileUtils.read_lines_from_file(nonexistent)
 
-def test_to_file_path_with_string():
+def test_to_file_path_with_string(tmp_path):
     """Test file path generation with string input."""
-    path = FileUtils.to_file_path("downloads", "10.1002/smj.123", "pdf")
+    path = FileUtils.to_file_path(str(tmp_path), "10.1002/smj.123", "pdf")
     assert isinstance(path, Path)
-    assert path == Path("downloads/10.1002-smj.123.pdf")
+    assert path == tmp_path / "10.1002-smj.123.pdf"
 
-def test_to_file_path_with_path():
+def test_to_file_path_with_path(tmp_path):
     """Test file path generation with Path input."""
-    downloads = Path("downloads")
-    path = FileUtils.to_file_path(downloads, "10.1002/smj.123", "pdf")
+    path = FileUtils.to_file_path(tmp_path, "10.1002/smj.123", "pdf")
     assert isinstance(path, Path)
-    assert path == downloads / "10.1002-smj.123.pdf"
+    assert path == tmp_path / "10.1002-smj.123.pdf"
 
 def test_to_safe_filename():
     """Test conversion of unsafe filenames."""

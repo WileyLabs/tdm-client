@@ -10,6 +10,7 @@ import shutil
 from unittest.mock import Mock, patch
 from http import HTTPStatus
 from urllib.parse import quote
+from pathlib import Path
 
 # Third-party imports
 import pytest
@@ -24,7 +25,7 @@ from tdmclient import (
 
 # Test constants
 INVALID_TOKEN = "not-a-uuid"
-DOIS_FILE = "tests/dois.txt"  # Test DOIs file
+DOIS_FILE = Path("tests") / "dois.txt"  # Test DOIs file
 DOIS_FILE_COUNT = 2  # Number of DOIs in test file
 NOT_DOI = "not-a-doi;"
 SEMICOLON_DOI = "10.1175/1520-0485(1986)016<1929:CTWOTE>2.0.CO;2"

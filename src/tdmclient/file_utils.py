@@ -8,9 +8,10 @@ Handles file downloads, path management, and I/O operations with:
 
 Path Arguments:
     All path parameters (type StrPath) accept either:
-    - A String (e.g. "/path/to/file.pdf" or "C:\\path\\to\\file.pdf")
-    - A PathLike object (e.g. Path("/path/to/file.pdf"))
-    Path separators are automatically normalized for the current OS.
+    - A PathLike object (recommend): Path("downloads") / "open-access" / "article.pdf"
+    - A string: "downloads/open-access/article.pdf" Will be converted to Path internally
+
+    For cross-platform compatibility, use Path objects and the / operator 
 """
 
 # Standard library imports
@@ -51,12 +52,12 @@ class FileUtils:
         
         Standardizes path handling by:
         - Converting String or PathLike input to Path object
-        - Normalizes path format (Linux "/" or Windows "\\")
-        
+
         Args:
-            path: Path to file or directory, can be either:
-                - A String (e.g. "/path/to/dir" or "C:\\path\\to\\dir")
-                - A PathLike object (e.g. Path("/path/to/dir"))
+            path: Path to file or directory
+
+        Note:
+            Recommend using Path objects for platform-independent path handling.
             
         Returns:
             Path: Path object with normalized format

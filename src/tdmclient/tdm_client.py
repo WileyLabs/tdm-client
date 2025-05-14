@@ -3,6 +3,20 @@
 Manages article downloads, rate limiting, and result tracking.
 Handles authentication, DOI validation, and file management.
 
+Path Arguments:
+    All path parameters (type StrPath) accept either:
+    - A PathLike object (recommend): Path("downloads") / "open-access"
+    - A string: "downloads/open-access/" Will be converted to Path internally
+
+    For cross-platform compatibility, use Path objects and the / operator 
+
+Return Types:
+    DownloadResult: Result object containing:
+        - Download status
+        - File path (if successful)
+        - Error message (if failed)
+        - API status code
+        - Duration of download
 """
 
 # Standard library imports
@@ -36,14 +50,6 @@ class TDMClient:
     - Rate-limited API requests
     - Download result tracking and reporting
     - Configurable download directory
-    
-    Return Types:
-        DownloadResult: Result object containing:
-            - Download status
-            - File path (if successful)
-            - Error message (if failed)
-            - API status code
-            - Duration of download
 
     Attributes:
         download_dir (Path): Directory where PDFs are saved
@@ -63,11 +69,10 @@ class TDMClient:
     API_CONNECTION_TIMEOUT: Final[int] = 5  # seconds for initial connection
     API_READ_TIMEOUT: Final[int] = 30    # seconds for reading response
 
-    # File handling constants
-    FILE_DOWNLOAD_DIR: Final[Path] = Path("downloads/")  # Relative to current working directory
-    FILE_RESULTS: Final[Path] = Path("download_results.csv")
-    FILE_DOIS: Final[Path] = Path("dois.txt")  # Relative to current working directory
-    FILE_DOI_SEPARATOR: Final[str] = "-"  # Used when converting DOI to filename
+    # File handling constants. Relative to current working directory
+    FILE_DOWNLOAD_DIR: Final[Path] = Path("downloads")
+    FILE_RESULTS: Final[Path] = Path("results.csv")
+    FILE_DOIS: Final[Path] = Path("dois.txt")
 
     # Other constants
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
@@ -78,11 +83,8 @@ class TDMClient:
 
         Args:
             api_token: TDM API token string (UUID) from Wiley's TDM service. 
-            download_dir: Directory where PDFs are saved. Defaults to 'downloads/', can be either:
-                - A String (e.g. "/path/to/dir" or "C:\\path\\to\\dir")
-                - A PathLike object (e.g. Path("/path/to/dir"))
-           Path separators are automatically normalized for the current OS.
-            
+            download_dir: Directory where PDFs are saved. Defaults to 'downloads'. See module docs.
+
         Raises:
             ValueError: If tdm_token is not provided and not found in environment
         """
@@ -182,10 +184,8 @@ class TDMClient:
         """Set the download directory and ensure it exists.
 
         Args:
-            download_dir: Directory where PDFs are saved. Defaults to 'downloads/', can be either:
-                - A String (e.g. "/path/to/dir" or "C:\\path\\to\\dir")
-                - A PathLike object (e.g. Path("/path/to/dir"))
-           Path separators are automatically normalized for the current OS.
+            download_dir: Directory where PDFs are saved. Defaults to 'downloads'. See module docs.
+
         Raises:
             OSError: If directory cannot be created due to permissions or other OS issues                
         """
@@ -393,7 +393,7 @@ class TDMClient:
         """Download articles listed in a file.
 
         Args:
-            dois_file_path: Path to text file containing DOIs, one per line. Defaults to dois.txt
+            dois_file_path: Path to text file containing DOIs, one per line. Defaults to 'dois.txt'
             on_result: Optional callback function called after each download
 
         Returns:
@@ -443,6 +443,8 @@ class TDMClient:
         """Save download results to CSV file.
 
         Args:
-            csv_path: Path where CSV file will be saved. Defaults to 'download_results.csv'
+            csv_path: Path where CSV file will be saved. Defaults to 'results.csv'. See module docs.
+        Raises:
+            OSError: If the file cannot be written due to permissions or other OS issues
         """
         TDMReporting.save_download_results(self._download_results, csv_path)

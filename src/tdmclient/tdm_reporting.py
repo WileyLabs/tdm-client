@@ -30,10 +30,12 @@ class TDMReporting:
 
         Args:
             results: List of download results to save
-            csv_path: Path to CSV file, can be either:
-                - A String (e.g. "/path/to/results.csv" or "\\path\\to\\results.csv")
-                - A PathLike object (e.g. Path("/path/to/results.csv"))
-            Path separators are automatically normalized for the current OS.
+            csv_path: Path to the CSV file. Can be either:
+                - A PathLike object (recommend): Path("downloads") / "results.csv"
+                - A string: "downloads/results.csv" Will be converted to Path internally
+                
+        Note:
+            Recommend using Path objects for platform-independent path handling.
         """
         logger = logging.getLogger(__name__)
 

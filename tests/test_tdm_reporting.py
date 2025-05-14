@@ -20,9 +20,12 @@ from tdmclient import (
 )
 
 # Test constants
+TEST_DIR = Path("reports")
+TEST_CSV = TEST_DIR / "results.csv"
+
 TEST_DOI_1 = "10.1002/test1"
 TEST_DOI_2 = "10.1002/test2"
-TEST_FILE = Path("article.pdf")
+TEST_PDF = Path("article.pdf")
 TEST_SIZE = 12345
 
 @pytest.fixture(name="results")
@@ -33,7 +36,7 @@ def results_fixture():
             doi=TEST_DOI_1,
             status=DownloadStatus.SUCCESS,
             comment="Successfully downloaded",
-            path=TEST_FILE,
+            path=TEST_PDF,
             size=TEST_SIZE,
             duration=1.23,
             api_status=HTTPStatus.OK
@@ -49,7 +52,7 @@ def results_fixture():
 def test_save_download_results(tmp_path, results):
     """Test saving results to CSV with all fields."""
 
-    csv_path = tmp_path / "results.csv"
+    csv_path = tmp_path / TEST_CSV
 
     TDMReporting.save_download_results(results, csv_path)
 
@@ -66,7 +69,7 @@ def test_save_download_results(tmp_path, results):
         assert success_row['DOI'] == TEST_DOI_1
         assert success_row['Status'] == str(DownloadStatus.SUCCESS)
         assert success_row['Comment'] == 'Successfully downloaded'
-        assert success_row['Path'] == str(TEST_FILE)
+        assert success_row['Path'] == str(TEST_PDF)
         assert success_row['Size (KB)'] == str(TEST_SIZE)
         assert success_row['Duration (s)'] == '1.2'
         assert success_row['HTTP Status'] == str(HTTPStatus.OK.value)
@@ -84,16 +87,7 @@ def test_save_download_results(tmp_path, results):
 def test_save_empty_results(tmp_path):
     """Test handling of empty results list."""
 
-    csv_path = tmp_path / "empty.csv"
+    csv_path = tmp_path / TEST_CSV
     TDMReporting.save_download_results([], str(csv_path))
 
     assert not csv_path.exists()
-
-def test_save_results_creates_directories(tmp_path, results):
-    """Test creation of nested directories."""
-
-    nested_path = tmp_path / "reports" / "nested" / "results.csv"
-    TDMReporting.save_download_results(results, str(nested_path))
-
-    assert nested_path.exists()
-    assert nested_path.parent.is_dir()
