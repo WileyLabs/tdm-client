@@ -14,7 +14,7 @@ class DownloadStatus(Enum):
 
     # TDM API
     SUCCESS = auto()
-    FORBIDDEN = auto()
+    ACCESS_DENIED = auto()
     UNKNOWN_DOI = auto()
     KNOWN_ISSUE = auto()
     API_ERROR = auto()

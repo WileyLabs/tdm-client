@@ -43,7 +43,7 @@ def results_fixture():
         ),
         DownloadResult(
             doi=TEST_DOI_2,
-            status=DownloadStatus.FORBIDDEN,
+            status=DownloadStatus.ACCESS_DENIED,
             comment="Access denied",
             api_status=HTTPStatus.FORBIDDEN
         )
@@ -77,7 +77,7 @@ def test_save_download_results(tmp_path, results):
         # Check forbidden access row
         error_row = rows[1]
         assert error_row['DOI'] == TEST_DOI_2
-        assert error_row['Status'] == str(DownloadStatus.FORBIDDEN)
+        assert error_row['Status'] == str(DownloadStatus.ACCESS_DENIED)
         assert error_row['Comment'] == 'Access denied'
         assert error_row['Path'] == ''
         assert error_row['Size (KB)'] == ''

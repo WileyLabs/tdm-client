@@ -322,7 +322,7 @@ class TDMClient:
             pdf_url = f"{TDMClient.WOL_PDF_URL}{doi}"
             return DownloadResult(
                 doi,
-                DownloadStatus.FORBIDDEN,
+                DownloadStatus.ACCESS_DENIED,
                 f"TDM access denied from IP {self._my_ip_address}. Try manually: {pdf_url}",
                 api_status=status
             )
