@@ -1,22 +1,15 @@
-"""Wiley TDM API client for downloading articles.
+"""Wiley TDM API client module for downloading academic articles.
 
-Manages article downloads, rate limiting, and result tracking.
-Handles authentication, DOI validation, and file management.
+This module provides a client interface for Wiley's Text and Data Mining (TDM) API.
+It handles authentication, rate limiting, and manages the download of academic articles
+through their DOIs.
 
-Path Arguments:
-    All path parameters (type StrPath) accept either:
-    - A PathLike object (recommend): Path("downloads") / "open-access"
-    - A string: "downloads/open-access/" Will be converted to Path internally
+For cross-platform compatibility, all path operations use PathLib:
+    Path("downloads") / "open-access"
 
-    For cross-platform compatibility, use Path objects and the / operator 
-
-Return Types:
-    DownloadResult: Result object containing:
-        - Download status
-        - File path (if successful)
-        - Error message (if failed)
-        - API status code
-        - Duration of download
+Typical usage:
+    client = TDMClient(api_token)
+    result = client.download_pdf("10.1002/example.doi")
 """
 
 # Standard library imports
@@ -42,20 +35,28 @@ from .doi_utils import DOIUtils
 from .types import StrPath
 
 class TDMClient:
-    """Client for downloading articles from Wiley's TDM API.
+    """Client for downloading and managing Wiley TDM API article access.
     
-    Provides functionality for:
+    This class handles:
     - Single and batch article downloads via DOI
-    - File management and DOI validation
     - Rate-limited API requests
     - Download result tracking and reporting
-    - Configurable download directory
-
+    - Cross-platform file management
+    - DOI validation and error handling
+    
     Attributes:
         download_dir (Path): Directory where PDFs are saved
         api_rate_limit (float): Time in seconds between API requests
         download_results_errors_only (bool): Only track failed downloads
         skip_existing_files (bool): Skip downloading if file exists
+    
+    Return Types:
+        All download methods return DownloadResult objects containing:
+        - Download status
+        - File path (if successful)
+        - Error message (if failed)
+        - API status code
+        - Duration of download
     """
 
     # TDM API constants
@@ -78,15 +79,23 @@ class TDMClient:
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
 
     def __init__(self, api_token: Optional[str] = None, download_dir: StrPath = FILE_DOWNLOAD_DIR):
-        """Initialize the TDMClient with a TDM API token and download directory.
-        If None, reads from TDM_API_TOKEN env variable.
+        """Initialize the TDMClient with API token and download directory.
+
+        The API token can be provided directly or read from environment.
+        The download directory defaults to 'downloads' in current working directory.
 
         Args:
-            api_token: TDM API token string (UUID) from Wiley's TDM service. 
-            download_dir: Directory where PDFs are saved. Defaults to 'downloads'. See module docs.
+            api_token: TDM API token string (UUID) from Wiley's TDM service.
+                If None, reads from TDM_API_TOKEN environment variable.
+
+            download_dir: Directory path for saving PDFs.  Can be either:
+                - A string path
+                - A PathLike object (recommended)
+                Relative paths are resolved from the current working directory.
 
         Raises:
-            ValueError: If tdm_token is not provided and not found in environment
+            ValueError: If token is not provided, not in environment, or invalid UUID
+            OSError: If download directory cannot be created
         """
         self.logger = logging.getLogger(__name__)
 
@@ -117,8 +126,11 @@ class TDMClient:
         Private method to handle token initialization and validation.
         
         Args:
-            value: UUID token from Wiley's TDM service or None to use environment
-                
+            api_token: UUID token from Wiley's TDM service or None to use environment
+    
+        Returns:
+            None
+            
         Raises:
             ValueError: If token is not provided, not in environment, or invalid UUID
         """
@@ -172,10 +184,10 @@ class TDMClient:
 
     @property
     def download_dir(self) -> Path:
-        """Get the current download directory.
+        """Directory where PDF files are saved.
 
         Returns:
-            Path: Path to directory where PDFs are saved
+            Path: Current download directory path
         """
         return self._download_dir
 
@@ -184,10 +196,13 @@ class TDMClient:
         """Set the download directory and ensure it exists.
 
         Args:
-            download_dir: Directory where PDFs are saved. Defaults to 'downloads'. See module docs.
+            download_dir: Directory path for saving PDFs. Can be either:
+                - A string path
+                - A PathLike object (recommended)
+                Relative paths are resolved from the current working directory.
 
         Raises:
-            OSError: If directory cannot be created due to permissions or other OS issues                
+            OSError: If directory cannot be created due to permissions
         """
         path = FileUtils.create_directory(download_dir)
         self._download_dir = path
@@ -204,6 +219,12 @@ class TDMClient:
 
         Raises:
             ValueError: If DOI is None or empty string
+
+        Examples:
+            >>> client = TDMClient(api_token)
+            >>> result = client.download_pdf("10.1002/example.doi")
+            >>> if result.status == DownloadStatus.SUCCESS:
+            ...     print(f"PDF saved to {result.file_path}")
         """
         result = None
 
@@ -292,10 +313,10 @@ class TDMClient:
         Args:
             doi: The DOI being processed
             status: HTTP status code
-            response: Full response object
-            
+            response: Full response object from the API request
+    
         Returns:
-            DownloadResult: Error result with appropriate status
+            DownloadResult: Error result with appropriate status and message
         """
         if status == HTTPStatus.FORBIDDEN:
             pdf_url = f"{TDMClient.WOL_PDF_URL}{doi}"
@@ -366,7 +387,8 @@ class TDMClient:
 
         Args:
             dois: List of DOIs to download
-            on_result: Optional callback function called after each download
+            on_result: Optional callback function that takes a DownloadResult 
+                and is called after each download completes
 
         Returns:
             List[DownloadResult]: List of download results
@@ -390,11 +412,16 @@ class TDMClient:
         dois_file_path: StrPath = FILE_DOIS,
         on_result: Optional[Callable[[DownloadResult], None]] = None
     ) -> List[DownloadResult]:
-        """Download articles listed in a file.
+        """Download articles listed in a file. Defaults to 'dois.txt'
 
         Args:
-            dois_file_path: Path to text file containing DOIs, one per line. Defaults to 'dois.txt'
-            on_result: Optional callback function called after each download
+            dois_file_path: Path to text file containing DOIs, one per line. Can be either:
+                - A string path
+                - A PathLike object (recommended)
+                Relative paths are resolved from the current working directory.
+
+            on_result: Optional callback function that takes a DownloadResult 
+            and is called after each download completes
 
         Returns:
             List[DownloadResult]: List of download results
@@ -440,10 +467,16 @@ class TDMClient:
         return self._download_results.copy()  # Return copy to prevent external modification
 
     def save_download_results(self, csv_path: StrPath = FILE_RESULTS) -> None:
-        """Save download results to CSV file.
+        """Save download results to CSV file. Defaults to 'results.csv'
 
         Args:
-            csv_path: Path where CSV file will be saved. Defaults to 'results.csv'. See module docs.
+            csv_path: Path where CSV file will be saved. Can be either:
+                - A string path
+                - A PathLike object (recommended)
+                Relative paths are resolved from the current working directory. 
+        Returns:
+            None
+
         Raises:
             OSError: If the file cannot be written due to permissions or other OS issues
         """
