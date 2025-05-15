@@ -50,20 +50,20 @@ def test_env_tdm_token():
     assert token is not None
     assert len(token) > 0
 
-def test_no_tdm_token(monkeypatch):
+def test_no_tdm_token(monkeypatch, tmp_path):
     """Test that ValueError is raised when token is not provided and not in environment."""
     # Clear the environment variable if it exists
     monkeypatch.delenv(TDMClient.API_TOKEN_ENV, raising=False)
 
     with pytest.raises(ValueError) as exc_info:
-        TDMClient() # No token provided either
+        TDMClient(download_dir = tmp_path / "downloads") # No token provided either
 
     assert str(exc_info.value) == f"{TDMClient.API_TOKEN_ENV} environment variable not set"
 
-def test_invalid_tdm_token():
+def test_invalid_tdm_token(tmp_path):
     """Test that invalid UUID tokens are rejected."""
     with pytest.raises(ValueError, match="Invalid TDM API token format"):
-        TDMClient(api_token=INVALID_TOKEN)
+        TDMClient(download_dir =  tmp_path / "downloads", api_token=INVALID_TOKEN)
 
 def test_rate_limit_minimum(tdm):
     """Test that the minimum rate limit is enforced."""
