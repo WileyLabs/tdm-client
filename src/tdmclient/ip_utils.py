@@ -24,7 +24,8 @@ class IPUtils:
     ]
 
     # Request Configuration
-    REQUEST_TIMEOUT: Final[int] = 5  # seconds
+    API_CONNECTION_TIMEOUT: Final[int] = 2  # seconds - fail fast
+    API_READ_TIMEOUT: Final[int] = 3        # seconds
 
     @staticmethod
     def get_ip_address() -> str:
@@ -35,7 +36,10 @@ class IPUtils:
         """
         for api_url in IPUtils.IP_APIS:
             try:
-                response = requests.get(api_url, timeout=IPUtils.REQUEST_TIMEOUT)
+                response = requests.get(
+                    api_url,
+                    timeout=(IPUtils.API_CONNECTION_TIMEOUT, IPUtils.API_READ_TIMEOUT)
+                )
                 if response.status_code == 200:
                     ip = response.text.strip()
                     IPUtils._logger.debug("Detected IP: %s from %s", ip, api_url)

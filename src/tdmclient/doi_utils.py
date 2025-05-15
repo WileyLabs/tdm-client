@@ -30,11 +30,11 @@ class DOIUtils:
     DOI_REGEX: Final[Pattern] = re.compile(r'^10.\d{4,9}/[-._;()/:<>\[\]A-Z0-9]+$', re.IGNORECASE)
 
     # DOI.org API Configuration
-    DOI_API_URL: Final[str] = 'https://doi.org/api/handles'
-    DOI_API_TYPE: Final[str] = 'URL'
-    DOI_API_SUCCESS_CODE: Final[int] = 1
-    DOI_API_CONNECTION_TIMEOUT: Final[int] = 5  # seconds
-    DOI_API_READ_TIMEOUT: Final[int] = 10    # seconds
+    API_URL: Final[str] = 'https://doi.org/api/handles'
+    API_TYPE: Final[str] = 'URL'
+    API_SUCCESS_CODE: Final[int] = 1
+    API_CONNECTION_TIMEOUT: Final[int] = 2  # seconds - fail fast
+    API_READ_TIMEOUT: Final[int] = 3    # seconds
 
     @staticmethod
     def is_valid(doi: str) -> bool:
@@ -52,15 +52,15 @@ class DOIUtils:
         try:
             if not DOIUtils.check_format(doi):
                 return False
-            url = f"{DOIUtils.DOI_API_URL}/{doi}?type={DOIUtils.DOI_API_TYPE}"
+            url = f"{DOIUtils.API_URL}/{doi}?type={DOIUtils.API_TYPE}"
             response = DOIUtils._session.get(
                 url,
-                timeout=(DOIUtils.DOI_API_CONNECTION_TIMEOUT, DOIUtils.DOI_API_READ_TIMEOUT)
+                timeout=(DOIUtils.API_CONNECTION_TIMEOUT, DOIUtils.API_READ_TIMEOUT)
             )
             if response.status_code == HTTPStatus.OK:
                 metadata = response.json()
                 response_code = metadata.get('responseCode')
-                return response_code == DOIUtils.DOI_API_SUCCESS_CODE
+                return response_code == DOIUtils.API_SUCCESS_CODE
             return False
         except (requests.RequestException, ValueError, KeyError) as e:
             DOIUtils._logger.warning("Error validating DOI %s: %s", doi, str(e))

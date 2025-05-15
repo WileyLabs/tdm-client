@@ -71,14 +71,14 @@ class TDMClient:
     API_READ_TIMEOUT: Final[int] = 30    # seconds for reading response
 
     # File handling constants. Relative to current working directory
-    FILE_DOWNLOAD_DIR: Final[Path] = Path("downloads")
-    FILE_RESULTS: Final[Path] = Path("results.csv")
-    FILE_DOIS: Final[Path] = Path("dois.txt")
+    DOWNLOAD_DIR: Final[Path] = Path("downloads")
+    RESULTS_FILE: Final[Path] = Path("results.csv")
+    DOIS_FILE: Final[Path] = Path("dois.txt")
 
     # Other constants
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
 
-    def __init__(self, api_token: Optional[str] = None, download_dir: StrPath = FILE_DOWNLOAD_DIR):
+    def __init__(self, api_token: Optional[str] = None, download_dir: StrPath = DOWNLOAD_DIR):
         """Initialize the TDMClient with API token and download directory.
 
         The API token can be provided directly or read from environment.
@@ -409,7 +409,7 @@ class TDMClient:
 
     def download_pdfs_from_file(
         self,
-        dois_file_path: StrPath = FILE_DOIS,
+        dois_file_path: StrPath = DOIS_FILE,
         on_result: Optional[Callable[[DownloadResult], None]] = None
     ) -> List[DownloadResult]:
         """Download articles listed in a file. Defaults to 'dois.txt'
@@ -466,7 +466,7 @@ class TDMClient:
         """
         return self._download_results.copy()  # Return copy to prevent external modification
 
-    def save_download_results(self, csv_path: StrPath = FILE_RESULTS) -> None:
+    def save_download_results(self, csv_path: StrPath = RESULTS_FILE) -> None:
         """Save download results to CSV file. Defaults to 'results.csv'
 
         Args:
