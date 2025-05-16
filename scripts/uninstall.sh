@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# TDM Client Uninstallation Script
+# Wiley TDM Client Uninstallation Script
 # --------------------------------
+#
+# Audience: Wiley Labs Developers/Contributors
+#
 # This script:
 # 1. Removes the TDM API token and TDM_HOME environment variables from ~/.bashrc
 # 2. Deletes the 'tdm-client' directory from the current location

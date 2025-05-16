@@ -3,13 +3,25 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tdmclient"
+name = "wiley-tdm"
 version = "0.1.0"
-description = "Client for downloading articles from Wiley's TDM API"
+description = "Client for downloading article PDFs from Wiley's TDM API"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "requests>=2.32.0",
+]
+authors = [
+    {name = "Wiley Labs", email = "tdm@wiley.com"}
+]
+license = {file = "LICENSE"}
+keywords = ["wiley", "tdm", "pdf", "doi", "text-mining", "data-mining", "client", "api", "sdk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.9",
+    "Topic :: Scientific/Engineering :: Information Analysis"
 ]
 
 [project.optional-dependencies]
@@ -32,3 +44,16 @@ source = ["src"]
 [tool.coverage.report]
 fail_under = 95
 show_missing = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/wiley_tdm"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/examples",
+    "LICENSE",
+    "README.md",
+    "CONTRIBUTING.md",
+    "tests"
+]

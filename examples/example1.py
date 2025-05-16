@@ -6,14 +6,14 @@ Files are saved to the 'downloads' directory relative to the current working dir
 Requirements:
     - Virtual environment activated
     - TDM_API_TOKEN environment variable set
-    - tdmclient package installed
+    - wiley-tdm package installed
 
 Output:
     - downloads/<doi>.pdf file(s)
 """
 
 import logging
-from tdmclient import TDMClient
+from wiley_tdm import TDMClient
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

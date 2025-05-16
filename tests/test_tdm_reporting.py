@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 # Local imports
-from tdmclient import (
+from wiley_tdm import (
     DownloadResult,
     DownloadStatus,
     TDMReporting

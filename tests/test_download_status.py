@@ -3,7 +3,7 @@
 """
 
 # Local imports
-from tdmclient import (
+from wiley_tdm import (
     DownloadStatus,
     DownloadResult
 )

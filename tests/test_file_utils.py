@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import pytest
 
 # Local imports
-from tdmclient.file_utils import FileUtils
+from wiley_tdm.file_utils import FileUtils
 
 # Test constants
 TEST_DIR = Path("test") / "dir"

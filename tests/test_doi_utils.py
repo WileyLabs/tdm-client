@@ -8,7 +8,7 @@ from unittest.mock import patch
 import requests
 
 # Local imports
-from tdmclient.doi_utils import DOIUtils
+from wiley_tdm.doi_utils import DOIUtils
 
 
 # Test constants

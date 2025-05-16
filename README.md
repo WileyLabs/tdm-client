@@ -1,4 +1,4 @@
-# tdm-client
+# wiley-tdm
 
 ![Python](https://img.shields.io/badge/python-v3.9+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -6,18 +6,13 @@
 
 ## Table of Contents
 - [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
-- [TDM Client](#tdm-client)
+- [Wiley TDM Client](#wiley-tdm-client)
 - [Features](#features)
 - [Requirements](#requirements)
 - [Quick Start](#quick-start)
   - [Environment Variables](#environment-variables)
   - [Install](#install)
   - [Basic Usage](#basic-usage)
-- [Development Setup](#development-setup)
-  - [Requirements](#requirements-1)
-  - [Option 1: Manual Setup](#option-1-manual-setup)
-  - [Option 2: Install Script](#option-2-install-script)
-  - [Running Tests](#running-tests)
 - [Troubleshooting](#troubleshooting)
   - [Access denied](#access-denied)
   - [Installation Issues](#installation-issues)
@@ -28,13 +23,13 @@
 
 To learn more about the TDM service and request a TDM Token visit our [TDM resources page](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining)
 
-## TDM Client
+## Wiley TDM Client
 
-The TDM Client is a Python library (installable via pip) that aims to simplify interaction with Wiley's TDM API. 
+The Wiley TDM Client is a Python package (installable via pip) that aims to simplify interaction with Wiley's TDM API. 
 
 ## Features
 
-The TDM Client has the following capabilities
+The Wiley TDM Client has the following capabilities
 
 * **PDF Downloads** - Download PDFs from Wiley's TDM API
   * Single or bulk DOI downloads (DOIs from file)
@@ -73,7 +68,7 @@ You will require the following:
 
 ### Environment Variables
 
-Set the environment variable `TDM_API_TOKEN` to be used by the TDMClient:
+Set the environment variable `TDM_API_TOKEN` to your API token:
 
 ```bash
 # Set your TDM API token (required)
@@ -83,18 +78,18 @@ echo $TDM_API_TOKEN
 
 ### Install
 
-Install the TDMClient in a Virtual Environment using pip. We always recommend running in a Virtual Environment so as not to clash with existing System Python libraries:
+Install the Wiley TDM package in a Virtual Environment using pip. We always recommend running in a Virtual Environment so as not to clash with existing System Python libraries:
 
 ```bash
 # Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
-# Install TDMClient directly from GitHub
-(venv) $ pip install "git+https://github.com/WileyLabs/tdm-client.git"
+# Install package
+(venv) $ pip install wiley-tdm
 
 # Verify installation
-(venv) $ pip list | grep tdmclient
+(venv) $ pip list | grep wiley-tdm
 
 # Deactivate virtual environment (you can keep it open)
 (venv) $ deactivate
@@ -109,7 +104,7 @@ Create example1.py (Copy or [download](examples/example1.py))
 
 ```python
 import logging
-from tdmclient import TDMClient
+from wiley_tdm import TDMClient
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -138,71 +133,6 @@ source venv/bin/activate
 ```
 
 See more [examples](examples/).
-
-## Development Setup
-
-### Requirements:
-- Python 3.9 or higher
-- Git
-
-### Option 1: Manual Setup
-
-```bash
-# Start in your projects directory
-mkdir -p ~/projects && cd ~/projects
-
-# Clone the repository
-git clone https://github.com/WileyLabs/tdm-client.git
-
-# Change to project directory
-cd tdm-client
-
-# Set your TDM API token
-export TDM_API_TOKEN='your-tdm-api-token'
-
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate
-
-# Install package with test dependencies
-(venv) $ pip install -e ".[test]"
-
-# Run tests
-(venv) $ pytest
-
-# Deactivate virtual environment
-(venv) $ deactivate
-```
-
-### Option 2: Install Script
-
-Alternatively, download and run ([install.sh](scripts/install.sh)).
-
-```bash
-# Start in your projects directory
-mkdir -p ~/projects && cd ~/projects
-
-# Download installation scripts
-curl -O https://raw.githubusercontent.com/WileyLabs/tdm-client/main/scripts/{install,uninstall}.sh
-
-# Make scripts executable
-chmod +x *.sh
-
-# Run installation
-source ./install.sh your-tdm-api-token
-```
-
-### Running Tests
-
-To run tests, use the following command:
-
-```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Run tests
-(venv) $ pytest
-```
 
 ## Troubleshooting
 
@@ -235,14 +165,14 @@ If you encounter issues during installation, ensure you have the correct version
 # Activate virtual environment
 source venv/bin/activate
 
-# Uninstall TDMClient
-(venv) $ pip uninstall tdmclient
+# Uninstall package
+(venv) $ pip uninstall wiley-tdm
 
-# Install TDMClient
-(venv) $ pip install "git+https://github.com/WileyLabs/tdm-client.git"
+# Install package
+(venv) $ pip install wiley-tdm
 
 # Verify installation
-(venv) $ pip list | grep tdmclient
+(venv) $ pip list | grep wiley-tdm
 
 # Deactivate virtual environment
 (venv) $ deactivate
@@ -250,11 +180,11 @@ source venv/bin/activate
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to:
+
+- Set up your development environment
+- Run tests
+- Submit pull requests
 
 Please ensure your PR includes:
 - Clear description of changes

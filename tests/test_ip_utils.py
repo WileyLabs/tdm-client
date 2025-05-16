@@ -11,7 +11,7 @@ from unittest.mock import patch
 import requests
 
 # Local imports
-from tdmclient.ip_utils import IPUtils
+from wiley_tdm.ip_utils import IPUtils
 
 def test_get_ip_address_success():
     """Test successful IP address detection."""

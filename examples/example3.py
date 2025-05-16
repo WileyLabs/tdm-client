@@ -7,7 +7,7 @@ relative to your current working directory.
 Requirements:
     - Virtual environment activated
     - TDM_API_TOKEN environment variable set
-    - tdmclient package installed
+    - wiley-tdm package installed
     - oa-dois.txt file containing DOIs (one per line)
 
 Output:
@@ -18,7 +18,7 @@ Output:
 import logging
 from pathlib import Path
 
-from tdmclient import TDMClient
+from wiley_tdm import TDMClient
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

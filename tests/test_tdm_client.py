@@ -17,7 +17,7 @@ import pytest
 import requests
 
 # Local imports
-from tdmclient import (
+from wiley_tdm import (
     TDMClient,
     DownloadResult,
     DownloadStatus,
