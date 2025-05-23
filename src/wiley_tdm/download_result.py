@@ -2,8 +2,8 @@
 
 # Standard library imports
 from dataclasses import dataclass
-from pathlib import Path
 from http import HTTPStatus
+from pathlib import Path
 from typing import Optional
 
 # Local imports

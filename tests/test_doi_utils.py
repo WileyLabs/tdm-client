@@ -9,7 +9,6 @@ import requests
 # Local imports
 from wiley_tdm.doi_utils import DOIUtils
 
-
 # Test constants
 OA_DOI = "10.1111/modl.12927"
 OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]

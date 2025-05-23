@@ -1,7 +1,7 @@
 """Tests for DownloadStatus and related DownloadResult."""
 
 # Local imports
-from wiley_tdm import DownloadStatus, DownloadResult
+from wiley_tdm import DownloadResult, DownloadStatus
 
 
 def test_download_status_str():

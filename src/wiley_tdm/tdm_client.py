@@ -13,25 +13,25 @@ Typical usage:
 """
 
 # Standard library imports
-import os
 import logging
+import os
 import time
 import urllib.parse
 from http import HTTPStatus
+from pathlib import Path
 from typing import Callable, Final, List, Optional
 from uuid import UUID
-from pathlib import Path
 
 # Third-party imports
 import requests
 
 # Local imports
-from .tdm_reporting import TDMReporting
+from .doi_utils import DOIUtils
 from .download_result import DownloadResult
 from .download_status import DownloadStatus
-from .ip_utils import IPUtils
 from .file_utils import FileUtils
-from .doi_utils import DOIUtils
+from .ip_utils import IPUtils
+from .tdm_reporting import TDMReporting
 from .types import StrPath
 
 

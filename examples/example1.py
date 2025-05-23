@@ -13,6 +13,7 @@ Output:
 """
 
 import logging
+
 from wiley_tdm import TDMClient
 
 # Setup logging

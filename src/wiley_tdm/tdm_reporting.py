@@ -7,8 +7,8 @@ from typing import Final, List
 
 # Local imports
 from .download_result import DownloadResult
-from .types import StrPath
 from .file_utils import FileUtils
+from .types import StrPath
 
 
 class TDMReporting:

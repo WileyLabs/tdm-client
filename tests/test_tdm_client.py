@@ -7,21 +7,17 @@ Requires TDM_API_TOKEN environment variable for authentication tests.
 # Standard library imports
 import os
 import shutil
-from unittest.mock import Mock, patch
 from http import HTTPStatus
-from urllib.parse import quote
 from pathlib import Path
+from unittest.mock import Mock, patch
+from urllib.parse import quote
 
 # Third-party imports
 import pytest
 import requests
 
 # Local imports
-from wiley_tdm import (
-    TDMClient,
-    DownloadResult,
-    DownloadStatus,
-)
+from wiley_tdm import DownloadResult, DownloadStatus, TDMClient
 
 # Test constants
 INVALID_TOKEN = "not-a-uuid"
