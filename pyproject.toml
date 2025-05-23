@@ -34,7 +34,9 @@ dev = [
     "pytest-cov>=4.1.0",
     "black>=23.0.0",
     "pylint>=3.0.0",
-    "isort>=5.12.0"
+    "isort>=5.12.0",
+    "build>=1.0.0",
+    "twine>=4.0.0"
 ]
 
 [tool.coverage.run]
@@ -55,5 +57,5 @@ include = [
     "LICENSE",
     "README.md",
     "CONTRIBUTING.md",
-    "tests"
+    "/tests"
 ]
