@@ -11,7 +11,7 @@ Path Arguments:
     - A PathLike object (recommend): Path("downloads") / "open-access" / "article.pdf"
     - A string: "downloads/open-access/article.pdf" Will be converted to Path internally
 
-    For cross-platform compatibility, use Path objects and the / operator 
+    For cross-platform compatibility, use Path objects and the / operator
 """
 
 # Standard library imports
@@ -22,6 +22,7 @@ from typing import Final, List
 # Local imports
 from .types import StrPath
 
+
 class FileUtils:
     """Handles all file I/O operations for TDM Client."""
 
@@ -30,26 +31,32 @@ class FileUtils:
 
     KB: Final[int] = 1024
     CHUNK_SIZE: Final[int] = 8 * KB  # 8KB chunks for downloads
-    COMMENT_CHAR: Final[str] = '#'
+    COMMENT_CHAR: Final[str] = "#"
 
     # File handling constants
     FILE_SEPARATOR: Final[str] = "-"
     UNSAFE_CHARS: Final[set] = {
-        '/', '\\',  # Path separators
-        ':', ';',   # Path/command delimiters
-        '*', '?',   # Wildcards
-        '"', "'",   # Quotes
-        '<', '>',   # Redirections
-        '|',        # Pipe
-        ' ',        # Space
-        '\t',       # Tab
-        '\n', '\r'  # Line endings
+        "/",
+        "\\",  # Path separators
+        ":",
+        ";",  # Path/command delimiters
+        "*",
+        "?",  # Wildcards
+        '"',
+        "'",  # Quotes
+        "<",
+        ">",  # Redirections
+        "|",  # Pipe
+        " ",  # Space
+        "\t",  # Tab
+        "\n",
+        "\r",  # Line endings
     }
 
     @staticmethod
     def to_path(path: StrPath) -> Path:
         """Convert any path input to a normalized Path object.
-        
+
         Standardizes path handling by:
         - Converting String or PathLike input to Path object
 
@@ -58,10 +65,10 @@ class FileUtils:
 
         Note:
             Recommend using Path objects for platform-independent path handling.
-            
+
         Returns:
             Path: Path object with normalized format
-            
+
         """
         if isinstance(path, Path):
             return path
@@ -70,14 +77,14 @@ class FileUtils:
     @staticmethod
     def to_safe_filename(file_stem: str, file_suffix: str) -> str:
         """Create a safe filename by replacing unsafe characters.
-    
+
         Args:
             file_stem: Name part of file without extension
             file_suffix: File extension without dot
-            
+
         Returns:
             str: Safe filename with special chars replaced and extension added
-            
+
         Example:
             >>> FileUtils.to_safe_filename("10.1002/smj:123", "pdf")
             '10.1002-smj-123.pdf'
@@ -87,11 +94,11 @@ class FileUtils:
             file_stem = file_stem.replace(char, FileUtils.FILE_SEPARATOR)
 
         # Then collapse multiple separators into one
-        while '--' in file_stem:
-            file_stem = file_stem.replace('--', '-')
+        while "--" in file_stem:
+            file_stem = file_stem.replace("--", "-")
 
         # Remove any leading or trailing separators
-        file_stem = file_stem.strip('-')
+        file_stem = file_stem.strip("-")
 
         return f"{file_stem}.{file_suffix}"
 
@@ -154,7 +161,7 @@ class FileUtils:
         FileUtils.create_directory(path.parent)
 
         bytes_written = 0
-        with path.open('wb') as output_file:
+        with path.open("wb") as output_file:
             for chunk in response.iter_content(chunk_size=FileUtils.CHUNK_SIZE):
                 bytes_written += len(chunk)
                 output_file.write(chunk)
@@ -164,7 +171,9 @@ class FileUtils:
         return file_size
 
     @staticmethod
-    def read_lines_from_file(file_path: StrPath, skip_comments: bool = True) -> List[str]:
+    def read_lines_from_file(
+        file_path: StrPath, skip_comments: bool = True
+    ) -> List[str]:
         """Read non-empty lines from a file.
 
         Args:
@@ -185,7 +194,7 @@ class FileUtils:
             raise FileNotFoundError(message)
 
         lines = []
-        with path.open('r', encoding='utf-8') as file:
+        with path.open("r", encoding="utf-8") as file:
             for line in file:
                 stripped = line.strip()
                 if not stripped:
@@ -200,15 +209,15 @@ class FileUtils:
     @staticmethod
     def to_file_path(directory_path: StrPath, file_stem: str, file_suffix: str) -> Path:
         """Get full file path with safe filename conversion.
-        
+
         Args:
             directory_path: Path to directory
             file_stem: Name part of the file without extension (e.g. "document" from "document.pdf")
             file_suffix: File extension without dot (e.g. "pdf" not ".pdf")
-            
+
         Returns:
             Path: Full normalized path with safe filename
-            
+
         Example:
             >>> FileUtils.to_file_path("downloads", "10.1002/smj.123", "pdf")
             PosixPath('downloads/10.1002-smj-123.pdf')

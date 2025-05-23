@@ -21,13 +21,15 @@ from pathlib import Path
 from wiley_tdm import TDMClient
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # Initialize client (uses TDM_API_TOKEN from environment)
-tdm = TDMClient(download_dir=Path('downloads') / 'oa-pdfs')
+tdm = TDMClient(download_dir=Path("downloads") / "oa-pdfs")
 
 # Download multiple Article PDFs, listed in a file, to the 'downloads/oa-pdfs' folder
-tdm.download_pdfs_from_file('oa-dois.txt')
+tdm.download_pdfs_from_file("oa-dois.txt")
 
 # Save the download results to a CSV file: 'downloads/oa-pdfs/download_results.csv'
 tdm.save_download_results()

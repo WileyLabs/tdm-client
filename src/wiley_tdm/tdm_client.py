@@ -34,22 +34,23 @@ from .file_utils import FileUtils
 from .doi_utils import DOIUtils
 from .types import StrPath
 
+
 class TDMClient:
     """Client for downloading and managing Wiley TDM API article access.
-    
+
     This class handles:
     - Single and batch article downloads via DOI
     - Rate-limited API requests
     - Download result tracking and reporting
     - Cross-platform file management
     - DOI validation and error handling
-    
+
     Attributes:
         download_dir (Path): Directory where PDFs are saved
         api_rate_limit (float): Time in seconds between API requests
         download_results_errors_only (bool): Only track failed downloads
         skip_existing_files (bool): Skip downloading if file exists
-    
+
     Return Types:
         All download methods return DownloadResult objects containing:
         - Download status
@@ -60,15 +61,15 @@ class TDMClient:
     """
 
     # TDM API constants
-    API_URL: Final[str] = 'https://api.wiley.com/onlinelibrary/tdm/v1/articles/'
-    API_TOKEN_ENV: Final[str] = 'TDM_API_TOKEN'
-    API_TOKEN_HEADER: Final[str] = 'Wiley-TDM-Client-Token'
-    API_USER_AGENT: Final[str] = 'TDMClient/0.1.0'
+    API_URL: Final[str] = "https://api.wiley.com/onlinelibrary/tdm/v1/articles/"
+    API_TOKEN_ENV: Final[str] = "TDM_API_TOKEN"
+    API_TOKEN_HEADER: Final[str] = "Wiley-TDM-Client-Token"
+    API_USER_AGENT: Final[str] = "TDMClient/0.1.0"
 
     # TDM API connection constants
     API_RATE_LIMIT: Final[float] = 5.0  # seconds
     API_CONNECTION_TIMEOUT: Final[int] = 5  # seconds for initial connection
-    API_READ_TIMEOUT: Final[int] = 30    # seconds for reading response
+    API_READ_TIMEOUT: Final[int] = 30  # seconds for reading response
 
     # File handling constants. Relative to current working directory
     DOWNLOAD_DIR: Final[Path] = Path("downloads")
@@ -78,7 +79,9 @@ class TDMClient:
     # Other constants
     WOL_PDF_URL: Final[str] = "https://onlinelibrary.wiley.com/doi/epdf/"
 
-    def __init__(self, api_token: Optional[str] = None, download_dir: StrPath = DOWNLOAD_DIR):
+    def __init__(
+        self, api_token: Optional[str] = None, download_dir: StrPath = DOWNLOAD_DIR
+    ):
         """Initialize the TDMClient with API token and download directory.
 
         The API token can be provided directly or read from environment.
@@ -117,20 +120,21 @@ class TDMClient:
         self._create_api_session()
         self._my_ip_address: str = IPUtils.get_ip_address()
 
-        self.logger.info("Your IP address, used to check entitlements: %s", self._my_ip_address)
-
+        self.logger.info(
+            "Your IP address, used to check entitlements: %s", self._my_ip_address
+        )
 
     def _validate_api_token(self, api_token: Optional[str]) -> None:
         """Initialize the TDM API token.
-        
+
         Private method to handle token initialization and validation.
-        
+
         Args:
             api_token: UUID token from Wiley's TDM service or None to use environment
-    
+
         Returns:
             None
-            
+
         Raises:
             ValueError: If token is not provided, not in environment, or invalid UUID
         """
@@ -138,7 +142,9 @@ class TDMClient:
         if api_token is None:
             api_token = os.getenv(TDMClient.API_TOKEN_ENV)
             if not api_token:
-                raise ValueError(f"{TDMClient.API_TOKEN_ENV} environment variable not set")
+                raise ValueError(
+                    f"{TDMClient.API_TOKEN_ENV} environment variable not set"
+                )
             self.logger.debug("Using TDM API token from environment variable")
 
         # Validate UUID format
@@ -146,17 +152,19 @@ class TDMClient:
             uuid_obj = UUID(str(api_token))
             self._api_token = str(uuid_obj)
         except ValueError as exc:
-            raise ValueError("Invalid TDM API token format. Must be a valid UUID.") from exc
+            raise ValueError(
+                "Invalid TDM API token format. Must be a valid UUID."
+            ) from exc
 
     def _create_api_session(self):
         """Initialize the TDM API session."""
         self._api_session = requests.Session()
         self._api_session.headers.update(
             {
-            TDMClient.API_TOKEN_HEADER: self._api_token,
-            'User-Agent': TDMClient.API_USER_AGENT,
-            'Connection': 'keep-alive',
-        }
+                TDMClient.API_TOKEN_HEADER: self._api_token,
+                "User-Agent": TDMClient.API_USER_AGENT,
+                "Connection": "keep-alive",
+            }
         )
 
     @property
@@ -179,7 +187,9 @@ class TDMClient:
             ValueError: If value is less than default API_RATE_LIMIT
         """
         if value < TDMClient.API_RATE_LIMIT:
-            raise ValueError(f"Rate limit is below default: {TDMClient.API_RATE_LIMIT} seconds")
+            raise ValueError(
+                f"Rate limit is below default: {TDMClient.API_RATE_LIMIT} seconds"
+            )
         self._api_rate_limit = value
 
     @property
@@ -239,18 +249,12 @@ class TDMClient:
                 file_path = FileUtils.to_file_path(self.download_dir, doi, "pdf")
                 if file_path.exists():
                     result = DownloadResult(
-                        doi,
-                        DownloadStatus.EXISTING_FILE,
-                        "",
-                        file_path
+                        doi, DownloadStatus.EXISTING_FILE, "", file_path
                     )
         else:
-            result = DownloadResult(
-                doi,
-                DownloadStatus.INVALID_DOI
-            )
+            result = DownloadResult(doi, DownloadStatus.INVALID_DOI)
 
-        if result is None: # No issues, proceed with download
+        if result is None:  # No issues, proceed with download
             start_time = time.perf_counter()
             result = self._download_pdf(doi)
             duration = time.perf_counter() - start_time
@@ -270,7 +274,7 @@ class TDMClient:
         """
 
         # Prepare request
-        encoded_doi = urllib.parse.quote(doi, safe='')
+        encoded_doi = urllib.parse.quote(doi, safe="")
         request_url = f"{TDMClient.API_URL}{encoded_doi}"
         self.logger.debug("Requesting PDF from: %s", request_url)
 
@@ -296,25 +300,18 @@ class TDMClient:
             return result
 
         except requests.RequestException as e:
-            return DownloadResult(
-                doi,
-                DownloadStatus.NETWORK_ERROR,
-                str(e)
-            )
+            return DownloadResult(doi, DownloadStatus.NETWORK_ERROR, str(e))
 
     def _handle_api_error(
-        self,
-        doi: str,
-        status: HTTPStatus,
-        response: requests.Response
+        self, doi: str, status: HTTPStatus, response: requests.Response
     ) -> DownloadResult:
         """Handle non-200 HTTP status codes.
-        
+
         Args:
             doi: The DOI being processed
             status: HTTP status code
             response: Full response object from the API request
-    
+
         Returns:
             DownloadResult: Error result with appropriate status and message
         """
@@ -324,28 +321,22 @@ class TDMClient:
                 doi,
                 DownloadStatus.ACCESS_DENIED,
                 f"TDM access denied from IP {self._my_ip_address}. Try manually: {pdf_url}",
-                api_status=status
+                api_status=status,
             )
         if status == HTTPStatus.NOT_FOUND:
-            if ';' in doi:
+            if ";" in doi:
                 return DownloadResult(
                     doi,
                     DownloadStatus.KNOWN_ISSUE,
                     "DOI contains semicolon",
-                    api_status=status
+                    api_status=status,
                 )
             return DownloadResult(
-                doi,
-                DownloadStatus.UNKNOWN_DOI,
-                None,
-                api_status=status
+                doi, DownloadStatus.UNKNOWN_DOI, None, api_status=status
             )
 
         return DownloadResult(
-            doi,
-            DownloadStatus.API_ERROR,
-            response.text,
-            api_status=status
+            doi, DownloadStatus.API_ERROR, response.text, api_status=status
         )
 
     def _save_pdf(self, response: requests.Response, doi: str) -> DownloadResult:
@@ -363,31 +354,20 @@ class TDMClient:
 
         try:
             file_size = FileUtils.save_file(response, pdf_path)
-            return DownloadResult(
-                doi,
-                DownloadStatus.SUCCESS,
-                "",
-                pdf_path,
-                file_size
-            )
+            return DownloadResult(doi, DownloadStatus.SUCCESS, "", pdf_path, file_size)
         except IOError as e:
-            return DownloadResult(
-                doi,
-                DownloadStatus.STORAGE_ERROR,
-                str(e),
-                pdf_path
-            )
+            return DownloadResult(doi, DownloadStatus.STORAGE_ERROR, str(e), pdf_path)
 
     def download_pdfs(
         self,
         dois: List[str],
-        on_result: Optional[Callable[[DownloadResult], None]] = None
+        on_result: Optional[Callable[[DownloadResult], None]] = None,
     ) -> List[DownloadResult]:
         """Download multiple articles given their DOIs.
 
         Args:
             dois: List of DOIs to download
-            on_result: Optional callback function that takes a DownloadResult 
+            on_result: Optional callback function that takes a DownloadResult
                 and is called after each download completes
 
         Returns:
@@ -403,14 +383,16 @@ class TDMClient:
                 if on_result:
                     on_result(result)
                 if result.status != DownloadStatus.EXISTING_FILE:
-                    self.logger.debug("Rate limiting: sleeping for %s seconds", self.api_rate_limit)
+                    self.logger.debug(
+                        "Rate limiting: sleeping for %s seconds", self.api_rate_limit
+                    )
                     time.sleep(self.api_rate_limit)
         return results
 
     def download_pdfs_from_file(
         self,
         dois_file_path: StrPath = DOIS_FILE,
-        on_result: Optional[Callable[[DownloadResult], None]] = None
+        on_result: Optional[Callable[[DownloadResult], None]] = None,
     ) -> List[DownloadResult]:
         """Download articles listed in a file. Defaults to 'dois.txt'
 
@@ -420,7 +402,7 @@ class TDMClient:
                 - A PathLike object (recommended)
                 Relative paths are resolved from the current working directory.
 
-            on_result: Optional callback function that takes a DownloadResult 
+            on_result: Optional callback function that takes a DownloadResult
             and is called after each download completes
 
         Returns:
@@ -464,7 +446,9 @@ class TDMClient:
         Returns:
             List[DownloadResult]: List of all download attempts and their results
         """
-        return self._download_results.copy()  # Return copy to prevent external modification
+        return (
+            self._download_results.copy()
+        )  # Return copy to prevent external modification
 
     def save_download_results(self, csv_path: StrPath = RESULTS_FILE) -> None:
         """Save download results to CSV file. Defaults to 'results.csv'
@@ -473,7 +457,7 @@ class TDMClient:
             csv_path: Path where CSV file will be saved. Can be either:
                 - A string path
                 - A PathLike object (recommended)
-                Relative paths are resolved from the current working directory. 
+                Relative paths are resolved from the current working directory.
         Returns:
             None
 

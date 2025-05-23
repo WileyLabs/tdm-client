@@ -7,9 +7,4 @@ from .tdm_reporting import TDMReporting
 
 __version__ = "0.1.0"
 
-__all__ = [
-    "TDMClient",
-    "DownloadResult", 
-    "DownloadStatus",
-    "TDMReporting"
-]
+__all__ = ["TDMClient", "DownloadResult", "DownloadStatus", "TDMReporting"]

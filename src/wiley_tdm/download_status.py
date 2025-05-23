@@ -7,7 +7,10 @@ Defines status codes for download operations with clear categories:
 - Network issues
 
 """
+
+# Standard library imports
 from enum import Enum, auto
+
 
 class DownloadStatus(Enum):
     """Status codes for download operations."""
@@ -31,4 +34,4 @@ class DownloadStatus(Enum):
 
     def __str__(self) -> str:
         """Return a human-readable string."""
-        return self.name.replace('_', ' ').title()
+        return self.name.replace("_", " ").title()

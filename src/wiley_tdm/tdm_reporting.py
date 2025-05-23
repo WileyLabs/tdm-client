@@ -10,18 +10,19 @@ from .download_result import DownloadResult
 from .types import StrPath
 from .file_utils import FileUtils
 
+
 class TDMReporting:
     """Handles reporting functionality for TDM downloads."""
 
     # CSV Configuration
     CSV_HEADERS: Final[List[str]] = [
-        'DOI', 
-        'Status', 
-        'Comment', 
-        'Path', 
-        'Size (KB)', 
-        'Duration (s)', 
-        'HTTP Status'
+        "DOI",
+        "Status",
+        "Comment",
+        "Path",
+        "Size (KB)",
+        "Duration (s)",
+        "HTTP Status",
     ]
 
     @staticmethod
@@ -33,7 +34,7 @@ class TDMReporting:
             csv_path: Path to the CSV file. Can be either:
                 - A PathLike object (recommend): Path("downloads") / "results.csv"
                 - A string: "downloads/results.csv" Will be converted to Path internally
-                
+
         Note:
             Recommend using Path objects for platform-independent path handling.
         """
@@ -45,18 +46,20 @@ class TDMReporting:
 
         FileUtils.create_directory(csv_path)
 
-        with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+        with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(TDMReporting.CSV_HEADERS)
             for result in results:
-                writer.writerow([
-                    result.doi,
-                    result.status,
-                    result.comment or "",
-                    result.path or "",
-                    result.size or "",
-                    f"{result.duration:.1f}" if result.duration else "",
-                    result.api_status.value if result.api_status else ""
-                ])
+                writer.writerow(
+                    [
+                        result.doi,
+                        result.status,
+                        result.comment or "",
+                        result.path or "",
+                        result.size or "",
+                        f"{result.duration:.1f}" if result.duration else "",
+                        result.api_status.value if result.api_status else "",
+                    ]
+                )
 
         logger.info("Download results saved to: %s", csv_path)

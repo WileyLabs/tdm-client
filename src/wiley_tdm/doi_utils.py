@@ -10,14 +10,16 @@ Features:
     - Deduplication of DOI lists while maintaining order
 """
 
+# Standard library imports
 import logging
 import re
-from http import HTTPStatus
-from typing import Final, Pattern, List
 from collections import OrderedDict
+from http import HTTPStatus
+from typing import Final, List, Pattern
 
 # Third-party imports
 import requests
+
 
 class DOIUtils:
     """Utility class for DOI operations and validation."""
@@ -27,22 +29,24 @@ class DOIUtils:
     _session: requests.Session = requests.Session()
 
     # DOI Configuration
-    DOI_REGEX: Final[Pattern] = re.compile(r'^10.\d{4,9}/[-._;()/:<>\[\]A-Z0-9]+$', re.IGNORECASE)
+    DOI_REGEX: Final[Pattern] = re.compile(
+        r"^10.\d{4,9}/[-._;()/:<>\[\]A-Z0-9]+$", re.IGNORECASE
+    )
 
     # DOI.org API Configuration
-    API_URL: Final[str] = 'https://doi.org/api/handles'
-    API_TYPE: Final[str] = 'URL'
+    API_URL: Final[str] = "https://doi.org/api/handles"
+    API_TYPE: Final[str] = "URL"
     API_SUCCESS_CODE: Final[int] = 1
     API_CONNECTION_TIMEOUT: Final[int] = 2  # seconds - fail fast
-    API_READ_TIMEOUT: Final[int] = 3    # seconds
+    API_READ_TIMEOUT: Final[int] = 3  # seconds
 
     @staticmethod
     def is_valid(doi: str) -> bool:
         """Check if a DOI is valid via doi.org.
-        
+
         Args:
             doi (str): The DOI to check.
-        
+
         Returns:
             bool: True if either:
                 - DOI format and API validation pass
@@ -55,11 +59,11 @@ class DOIUtils:
             url = f"{DOIUtils.API_URL}/{doi}?type={DOIUtils.API_TYPE}"
             response = DOIUtils._session.get(
                 url,
-                timeout=(DOIUtils.API_CONNECTION_TIMEOUT, DOIUtils.API_READ_TIMEOUT)
+                timeout=(DOIUtils.API_CONNECTION_TIMEOUT, DOIUtils.API_READ_TIMEOUT),
             )
             if response.status_code == HTTPStatus.OK:
                 metadata = response.json()
-                response_code = metadata.get('responseCode')
+                response_code = metadata.get("responseCode")
                 return response_code == DOIUtils.API_SUCCESS_CODE
             return False
         except (requests.RequestException, ValueError, KeyError) as e:
@@ -69,7 +73,7 @@ class DOIUtils:
     @staticmethod
     def check_format(doi: str) -> bool:
         """Check if string matches DOI format.
-        
+
         Args:
             doi: The DOI to validate
 
@@ -84,10 +88,10 @@ class DOIUtils:
     @staticmethod
     def dedupe(dois: List[str]) -> List[str]:
         """Filter invalid DOIs and remove duplicates while maintaining order.
-        
+
         Args:
             dois: List of DOIs to filter and deduplicate
-            
+
         Returns:
             List[str]: Filtered and deduplicated DOIs
         """
@@ -97,5 +101,7 @@ class DOIUtils:
         unique_dois = list(OrderedDict.fromkeys(valid_dois))
         filtered_count = len(dois) - len(unique_dois)
         if filtered_count > 0:
-            DOIUtils._logger.debug("Filtered out %d invalid or duplicate DOIs", filtered_count)
+            DOIUtils._logger.debug(
+                "Filtered out %d invalid or duplicate DOIs", filtered_count
+            )
         return unique_dois

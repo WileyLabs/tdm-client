@@ -9,9 +9,11 @@ from typing import Optional
 # Local imports
 from .download_status import DownloadStatus
 
+
 @dataclass
 class DownloadResult:
     """Class to store download attempt results."""
+
     doi: str
     status: DownloadStatus
     comment: Optional[str] = None

@@ -35,14 +35,16 @@ PAYWALLED_DOI = "10.1112/mtk.70009"
 NON_WILEY_DOI = "10.1007/978-3-540-49535-2_14"
 TEST_TOKEN = os.getenv("TDM_API_TOKEN")
 
+
 # Test fixture for TDMClient instance
 @pytest.fixture(name="tdm")
 def tdm_fixture(tmp_path):
     """Create a TDMClient instance for testing.
-    
+
     Uses temporary directory for downloads and reads token from TDM_API_TOKEN env var.
     """
-    return TDMClient(download_dir = tmp_path / "downloads")
+    return TDMClient(download_dir=tmp_path / "downloads")
+
 
 def test_env_tdm_token():
     """Test reading TDM_API_TOKEN from environment variable."""
@@ -50,20 +52,25 @@ def test_env_tdm_token():
     assert token is not None
     assert len(token) > 0
 
+
 def test_no_tdm_token(monkeypatch, tmp_path):
     """Test that ValueError is raised when token is not provided and not in environment."""
     # Clear the environment variable if it exists
     monkeypatch.delenv(TDMClient.API_TOKEN_ENV, raising=False)
 
     with pytest.raises(ValueError) as exc_info:
-        TDMClient(download_dir = tmp_path / "downloads") # No token provided either
+        TDMClient(download_dir=tmp_path / "downloads")  # No token provided either
 
-    assert str(exc_info.value) == f"{TDMClient.API_TOKEN_ENV} environment variable not set"
+    assert (
+        str(exc_info.value) == f"{TDMClient.API_TOKEN_ENV} environment variable not set"
+    )
+
 
 def test_invalid_tdm_token(tmp_path):
     """Test that invalid UUID tokens are rejected."""
     with pytest.raises(ValueError, match="Invalid TDM API token format"):
-        TDMClient(download_dir =  tmp_path / "downloads", api_token=INVALID_TOKEN)
+        TDMClient(download_dir=tmp_path / "downloads", api_token=INVALID_TOKEN)
+
 
 def test_rate_limit_minimum(tdm):
     """Test that the minimum rate limit is enforced."""
@@ -71,9 +78,10 @@ def test_rate_limit_minimum(tdm):
     with pytest.raises(ValueError, match=message):
         tdm.api_rate_limit = TDMClient.API_RATE_LIMIT - 1
 
+
 def assert_successful_download(result: DownloadResult, doi: str):
     """Helper function to validate successful download results.
-    
+
     Args:
         result: Download result to validate
         doi: Expected DOI
@@ -85,10 +93,12 @@ def assert_successful_download(result: DownloadResult, doi: str):
     assert result.size is not None and result.size > 0
     assert result.duration is not None and result.duration > 0
 
+
 def test_single_download(tdm):
     """Test single PDF download."""
     result = tdm.download_pdf(OA_DOI)
     assert_successful_download(result, OA_DOI)
+
 
 def test_multiple_downloads(tdm):
     """Test multiple PDF downloads."""
@@ -99,6 +109,7 @@ def test_multiple_downloads(tdm):
     for result in results:
         assert_successful_download(result, result.doi)
 
+
 def test_multiple_downloads_from_file(tdm):
     """Test multiple PDF downloads from file."""
 
@@ -108,6 +119,7 @@ def test_multiple_downloads_from_file(tdm):
 
     for result in results:
         assert_successful_download(result, result.doi)
+
 
 def test_save_download_results(tdm, tmp_path):
     """Test saving download results to CSV file."""
@@ -124,15 +136,16 @@ def test_save_download_results(tdm, tmp_path):
     content = csv_path.read_text()
     assert OA_DOI in content
 
+
 def test_download_callback(tdm):
     """Test download callback functionality."""
     mock_callback = Mock()
 
     # Mock download_pdf to return success without actual downloads
-    with patch.object(tdm, 'download_pdf') as mock_download:
+    with patch.object(tdm, "download_pdf") as mock_download:
         mock_download.side_effect = [
             DownloadResult(OA_DOIS[0], DownloadStatus.SUCCESS),
-            DownloadResult(OA_DOIS[1], DownloadStatus.SUCCESS)
+            DownloadResult(OA_DOIS[1], DownloadStatus.SUCCESS),
         ]
 
         # Execute
@@ -142,21 +155,20 @@ def test_download_callback(tdm):
         assert len(results) == len(OA_DOIS)
         assert mock_callback.call_count == len(OA_DOIS)
 
+
 def test_pre_url_encoded(tdm):
     """Test pre URL encoded download scenario, to ensure not double encoding"""
     encoded_doi = quote(OA_DOI)
     result = tdm.download_pdf(encoded_doi)
     assert_successful_download(result, OA_DOI)
 
-@pytest.mark.parametrize("invalid_doi", [
-    "",
-    None,
-    "   "
-])
+
+@pytest.mark.parametrize("invalid_doi", ["", None, "   "])
 def test_blank_doi(tdm, invalid_doi):
     """Test blank DOI scenario."""
     with pytest.raises(ValueError, match="DOI cannot be None or empty"):
         tdm.download_pdf(invalid_doi)
+
 
 def test_invalid_doi(tdm):
     """Test invalid DOI format."""
@@ -166,6 +178,7 @@ def test_invalid_doi(tdm):
     assert result.path is None
     assert result.size is None
 
+
 def test_non_wiley_doi(tdm):
     """Test attempting to download a non-Wiley DOI."""
     result = tdm.download_pdf(NON_WILEY_DOI)
@@ -173,6 +186,7 @@ def test_non_wiley_doi(tdm):
     assert result.status == DownloadStatus.UNKNOWN_DOI
     assert result.path is None
     assert result.size is None
+
 
 def test_semicolon_issue(tdm):
     """Test known limitation with semicolons in DOIs."""
@@ -183,6 +197,7 @@ def test_semicolon_issue(tdm):
     assert result.size is None
     assert result.api_status is HTTPStatus.NOT_FOUND
 
+
 def test_unauthorized_access(tdm):
     """Test unauthorized IP address scenario."""
 
@@ -190,6 +205,7 @@ def test_unauthorized_access(tdm):
     assert result.status == DownloadStatus.ACCESS_DENIED
     assert result.path is None
     assert result.size is None
+
 
 def test_skip_existing_files(tdm):
     """Test skip existing files functionality."""
@@ -204,7 +220,8 @@ def test_skip_existing_files(tdm):
     assert result2.path is not None
     assert result2.path == result1.path
 
-@patch('requests.Session.get')
+
+@patch("requests.Session.get")
 def test_network_error(mock_get, tdm):
     """Test handling of network errors."""
     mock_get.side_effect = requests.RequestException("Network error")
@@ -214,7 +231,8 @@ def test_network_error(mock_get, tdm):
     assert result.path is None
     assert result.size is None
 
-@patch('pathlib.Path.open')
+
+@patch("pathlib.Path.open")
 def test_storage_error(mock_path_open, tdm):
     """Test handling of file system errors."""
     # Simulate permission error when trying to open file
@@ -228,6 +246,7 @@ def test_storage_error(mock_path_open, tdm):
     assert result.path is not None
     assert result.size is None
     assert "Permission denied" in result.comment
+
 
 def test_api_error(tdm):
     """Test handling of API errors."""
@@ -245,10 +264,12 @@ def test_api_error(tdm):
     assert result.size is None
     assert result.api_status == status_code
 
+
 def test_empty_doi_list(tdm):
     """Test handling of empty DOI list."""
     results = tdm.download_pdfs([])
     assert len(results) == 0
+
 
 def test_empty_dois_file(tdm, tmp_path):
     """Test handling of empty DOIs file."""
@@ -260,6 +281,7 @@ def test_empty_dois_file(tdm, tmp_path):
     results = tdm.download_pdfs_from_file(str(empty_file))
     assert len(results) == 0
 
+
 def test_duplicate_dois(tdm):
     """Test handling of duplicate DOIs in list."""
     dois = [OA_DOI, OA_DOI]  # Same DOI twice
@@ -268,10 +290,12 @@ def test_duplicate_dois(tdm):
     assert len(results) == 1  # Should deduplicate
     assert_successful_download(results[0], OA_DOI)
 
+
 def test_invalid_dois_file(tdm):
     """Test handling of non-existent DOIs file."""
     with pytest.raises(FileNotFoundError):
         tdm.download_pdfs_from_file("nonexistent/file.txt")
+
 
 @pytest.fixture(autouse=True)
 def cleanup():
