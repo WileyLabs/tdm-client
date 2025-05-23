@@ -7,6 +7,7 @@ Requires TDM_API_TOKEN environment variable for authentication tests.
 # Standard library imports
 import os
 import shutil
+import time
 from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -294,6 +295,11 @@ def test_invalid_dois_file(tdm):
 
 
 @pytest.fixture(autouse=True)
+def pause_between_tests():
+    """Pause between tests to avoid rate limiting issues."""
+    time.sleep(TDMClient.API_RATE_LIMIT)
+
+
 def cleanup():
     """Clean up test files after each test."""
     yield
