@@ -11,6 +11,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1  # To avoid API Rate Limit issues
+      fail-fast: true
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
 
