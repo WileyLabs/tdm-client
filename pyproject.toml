@@ -29,14 +29,15 @@ test = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
 ]
+build = [
+    "build>=1.0.0",
+    "twine>=4.0.0"
+]
 dev = [
-    "pytest>=7.4.0",
-    "pytest-cov>=4.1.0",
+    "wiley-tdm[test,build]",  # Inherit test and build dependencies
     "black>=23.0.0",
     "pylint>=3.0.0",
     "isort>=5.12.0",
-    "build>=1.0.0",
-    "twine>=4.0.0"
 ]
 
 [tool.coverage.run]
