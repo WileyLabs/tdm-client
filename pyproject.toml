@@ -25,6 +25,11 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+lint = [
+    "black>=23.0.0",
+    "pylint>=3.0.0",
+    "isort>=5.12.0",
+]
 test = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",
@@ -34,10 +39,7 @@ build = [
     "twine>=4.0.0"
 ]
 dev = [
-    "wiley-tdm[test,build]",  # Inherit test and build dependencies
-    "black>=23.0.0",
-    "pylint>=3.0.0",
-    "isort>=5.12.0",
+    "wiley-tdm[lint,test,build]",  # Inherit test and build dependencies
 ]
 
 [tool.coverage.run]
