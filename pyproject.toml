@@ -55,8 +55,7 @@ packages = ["src/wiley_tdm"]
 include = [
     "/src",
     "/examples",
-    "LICENSE",
-    "README.md",
-    "CONTRIBUTING.md",
-    "/tests"
+    "/tests",
+    "*.md",
+    "LICENSE"
 ]
