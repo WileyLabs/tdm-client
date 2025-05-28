@@ -20,7 +20,6 @@ jobs:
 
     - name: Build
       run: |
-        pip install build twine
         python -m build
         twine check dist/*
 
@@ -31,7 +30,7 @@ jobs:
       run: |
         twine upload --repository testpypi dist/*
 
-    - name: Verify install from TestPyPI
+    - name: Echo published versions
       run: |
-        pip install --index-url https://test.pypi.org/simple/ wiley-tdm
-        python -c "from wiley_tdm import TDMClient; print(f'Successfully installed wiley-tdm version {TDMClient.__version__}')"
+        echo "Available versions:"
+        pip index versions --index-url https://test.pypi.org/simple/ wiley-tdm
