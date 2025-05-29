@@ -54,14 +54,11 @@ cd "$TDM_HOME"
 python3 -m venv venv
 source venv/bin/activate
 
-# Install the package in editable mode (build not required)
-pip install -e ".[test]"
+# Install dependencies
+pip install -e ".[dev]"
 
-# Show installed package
-pip list | grep wiley-tdm
-
-# Run tests
-pytest
+# Peform local build, including tests
+make all
 
 # Deactivate virtual environment
 deactivate
