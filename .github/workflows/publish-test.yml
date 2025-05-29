@@ -1,0 +1,54 @@
+name: Publish to TestPyPI
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  publish_test:
+    name: Publish to TestPyPI
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ".[build]"
+
+    - name: Build package
+      run: python -m build
+
+    - name: Verify package integrity
+      run: twine check dist/*
+
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: testpypi-${{ github.run_number }}-${{ github.ref_name }}
+        path: dist/
+        retention-days: 7
+
+    - name: Publish to TestPyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
+      run: |
+        twine upload --repository testpypi dist/*
+
+    - name: Wait for TestPyPI indexing
+      run: |
+        echo "Waiting for TestPyPI to index the package..."
+        sleep 30
+
+    - name: Verify published versions
+      run: |
+        echo "Available versions:"
+        pip index versions --index-url https://test.pypi.org/ wiley-tdm
+
+
