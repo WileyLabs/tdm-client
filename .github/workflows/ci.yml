@@ -38,7 +38,7 @@ jobs:
     needs: lint
     strategy:
       fail-fast: true
-      # To avoid overwhelming the API with parallel requests. Mock out API in the future
+      # To avoid overwhelming the API with parallel requests. Mock API in the future.
       max-parallel: 1 
       matrix:
         # For backwards compatibility
@@ -53,14 +53,22 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
+        # Editable mode (-e) is required for coverage reporting
         run: |
           python -m pip install --upgrade pip
-          pip install ".[test]"
+          pip install -e ".[test]"
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           TDM_API_TOKEN: ${{ secrets.TDM_API_TOKEN }}
-        run: pytest --cov --cov-report=xml
+        run: pytest --cov=wiley_tdm --cov-report=xml --cov-report=html
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.python-version }}
+          path: htmlcov
+          retention-days: 7
 
   build:
     name: Build Package
@@ -92,3 +100,4 @@ jobs:
         with:
           name: python-dist
           path: dist/
+          retention-days: 7
