@@ -12,7 +12,7 @@ Requirements:
 
 Output:
     - downloads/oa-pdfs/<doi>.pdf: Downloaded PDF files
-    - downloads/oa-pdfs/download_results.csv: Download status report
+    - results.csv: Download status report
 """
 
 import logging
@@ -31,5 +31,5 @@ tdm = TDMClient(download_dir=Path("downloads") / "oa-pdfs")
 # Download multiple Article PDFs, listed in a file, to the 'downloads/oa-pdfs' folder
 tdm.download_pdfs_from_file("oa-dois.txt")
 
-# Save the download results to a CSV file: 'downloads/oa-pdfs/download_results.csv'
+# Save the download results to a CSV file: 'results.csv'
 tdm.save_download_results()

@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-v3.9+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Dependencies](https://img.shields.io/badge/dependencies-requests%20%3E%3D%202.32.0-orange)
+![Dependencies](https://img.shields.io/badge/dependencies-1-brightgreen)
 
 ## Table of Contents
 - [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
@@ -14,8 +14,8 @@
   - [Install](#install)
   - [Basic Usage](#basic-usage)
 - [Troubleshooting](#troubleshooting)
+  - [Installation](#installation)
   - [Access denied](#access-denied)
-  - [Installation Issues](#installation-issues)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -29,27 +29,27 @@ The Wiley TDM Client is a Python package (installable via pip) that aims to simp
 
 ## Features
 
-The Wiley TDM Client has the following capabilities
+The Wiley TDM Client has the following capabilities:
 
 * **PDF Downloads** - Download PDFs from Wiley's TDM API
-  * Single or bulk DOI downloads (DOIs from file)
+  * Single or bulk PDF downloads
   * Configurable download directory
   * Automatic DOI-based file naming
 * **DOI Validation**
-  * Non-Wiley DOI detection (via CrossRef API)
-  * Invalid DOIs
-  * DOI encoding
+  * Wiley DOI verification
+  * Invalid DOI detection
+  * DOI URL encoding
 * **API Handling**
-  * Authentication (API Token & IP)
+  * Authentication (API token & IP based auth)
   * Rate limiting support 
   * Error handling (e.g. Access denied)
 * **Reporting**
   * CSV export of download results
-  * Download statistics (success/failure rates)
+  * API status
   * File sizes and download durations
 * **Efficiency**
   * API Session handling
-  * Low memory utilisation with PDF streaming
+  * Low memory utilization with PDF streaming
   * Graceful timeouts
 
 ## Requirements
@@ -57,12 +57,12 @@ The Wiley TDM Client has the following capabilities
 You will require the following:
 
 * A [Python 3.9+](https://www.python.org/downloads/) environment
-* Python packages:
-  * requests>=2.32.0
+* Python dependencies:
+  * [requests](https://requests.readthedocs.io/) (≥2.32.0)
 * A [Wiley Online Library](https://onlinelibrary.wiley.com/) (WOL) Account
 * A TDM API Token, available from the WOL [TDM resources page](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining) using your WOL Account
 * Access to the content you wish to download
-* Access will be determined via your IP address
+* Access will be determined via your [public IP address](https://api.ipify.org/?format=json)
 
 ## Quick Start
 
@@ -70,9 +70,10 @@ You will require the following:
 
 Set the environment variable `TDM_API_TOKEN` to your API token:
 
+Linux example
 ```bash
 # Set your TDM API token (required)
-export TDM_API_TOKEN='your-tdm-api-token'
+export TDM_API_TOKEN='your-api-token-here'
 echo $TDM_API_TOKEN
 ```
 
@@ -90,57 +91,70 @@ source venv/bin/activate
 
 # Verify installation
 (venv) $ pip list | grep wiley-tdm
-
-# Deactivate virtual environment (you can keep it open)
-(venv) $ deactivate
 ```
 
 ### Basic Usage
 
-The following example will download a single Open Access Article PDF to a 'downloads' folder,
-relative to your current working directory, and name the file `<doi>`.pdf.
+The following examples will download Article PDFs to a 'downloads' directory,
+relative to your current working directory, and name the files `<doi>`.pdf. Run all code in your [Virtual Environment](#install).
 
-Create example1.py (Copy or [download](examples/example1.py))
-
+**Instantiate client**
 ```python
-import logging
 from wiley_tdm import TDMClient
-
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Initialize client (uses TDM_API_TOKEN from environment)
 tdm = TDMClient()
+```
 
-# Download a single Article PDF
+**Download Single PDF**
+```python
 tdm.download_pdf('10.1111/jtsb.12390')
 ```
 
-Execute in your Virtual Environment (important) and observe the downloaded PDF:
-
-```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Run example
-(venv) $ python3 example1.py 
-
-# List downloads
-(venv) $ ls -la downloads/
-
-# Deactivate when done
-(venv) $ deactivate
+**Download Multiple PDFs**
+```python
+tdm.download_pdfs(["10.1111/jtsb.12390", "10.1111/jlse.12141"])
 ```
+
+**More examples**
 
 See more [examples](examples/).
 
 ## Troubleshooting
 
+In most troubleshooting scenarios it can be helpful to generate a report:
+
+```
+# Save the download results to a CSV file: 'results.csv'
+tdm.save_download_results()
+```
+
+### Installation
+
+If you encounter installation issues:
+
+```bash
+# Ensure you're using Python 3.9+
+python3 --version
+
+# Update pip to latest version
+python3 -m pip install --upgrade pip
+```
+
+Alternatively, try installing a fresh [Virtual Environment](#install).
+
+If problems persist, please [open an issue](https://github.com/WileyLabs/tdm-client/issues) with:
+- Your Python version
+- The exact error message
+- Your operating system details
+
 ### Access denied
 
-Check you can manually view the desired content directly on [Wiley Online Library](https://onlinelibrary.wiley.com/).
+Check access directly on [Wiley Online Library](https://onlinelibrary.wiley.com/).
+- If access denied: contact your Institution/Wiley and check your subscription is active.
+- If access granted: ensure you are accessing the TDM API from a known IP address (see below).
 
-If you can, it is possible that the IP address you are accessing the website from is different to where you are running your TDM code. Observe your IP address in the TDM console log and compare to the IP address in your [browser](https://api.ipify.org?format=json).
+It is possible that the IP address you are accessing WOL from is different to where you are running your TDM code. Observe your IP address in the TDM console log and compare to the IP address in your [browser](https://api.ipify.org?format=json).
 
 Example console output:
 ```
@@ -151,45 +165,16 @@ Example Browser output:
 
 ```json
 // https://api.ipify.org/?format=json
-
 {
   "ip": "XX.XX.XX.XX"
 }
 ```
 
-### Installation Issues
-
-If you encounter issues during installation, ensure you have the correct version of Python and the required packages. You can also try reinstalling the package:
-
-```bash
-# Activate virtual environment
-source venv/bin/activate
-
-# Uninstall package
-(venv) $ pip uninstall wiley-tdm
-
-# Install package
-(venv) $ pip install wiley-tdm
-
-# Verify installation
-(venv) $ pip list | grep wiley-tdm
-
-# Deactivate virtual environment
-(venv) $ deactivate
-```
+If problems persist, please contact: tdm@wiley.com
 
 ## Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to:
-
-- Set up your development environment
-- Run tests
-- Submit pull requests
-
-Please ensure your PR includes:
-- Clear description of changes
-- Updated documentation
-- Test cases if applicable
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for further details.
 
 ## License
 
