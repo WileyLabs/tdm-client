@@ -108,12 +108,17 @@ tdm = TDMClient()
 
 **Download Single PDF**
 ```python
-tdm.download_pdf('10.1111/jtsb.12390')
+tdm.download_pdf("10.1111/jtsb.12390")
 ```
 
 **Download Multiple PDFs**
 ```python
 tdm.download_pdfs(["10.1111/jtsb.12390", "10.1111/jlse.12141"])
+```
+
+**Download Multiple PDFs, DOIs listed in a file**
+```python
+tdm.download_pdfs("dois.txt")
 ```
 
 **More examples**

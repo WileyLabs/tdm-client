@@ -110,7 +110,7 @@ def test_multiple_downloads(tdm):
 def test_multiple_downloads_from_file(tdm):
     """Test multiple PDF downloads from file."""
 
-    results = tdm.download_pdfs_from_file(DOIS_FILE)
+    results = tdm.download_pdfs(DOIS_FILE)
     assert len(results) == DOIS_FILE_COUNT
     assert len(tdm.download_results) == len(results)
 
@@ -264,8 +264,8 @@ def test_api_error(tdm):
 
 def test_empty_doi_list(tdm):
     """Test handling of empty DOI list."""
-    results = tdm.download_pdfs([])
-    assert len(results) == 0
+    with pytest.raises(ValueError, match="DOIs list cannot be empty"):
+        tdm.download_pdfs([])
 
 
 def test_empty_dois_file(tdm, tmp_path):
@@ -275,8 +275,8 @@ def test_empty_dois_file(tdm, tmp_path):
     empty_file.write_text("")
 
     # Test empty file
-    results = tdm.download_pdfs_from_file(str(empty_file))
-    assert len(results) == 0
+    with pytest.raises(ValueError, match="DOIs list cannot be empty"):
+        tdm.download_pdfs(empty_file)
 
 
 def test_duplicate_dois(tdm):
@@ -291,7 +291,7 @@ def test_duplicate_dois(tdm):
 def test_invalid_dois_file(tdm):
     """Test handling of non-existent DOIs file."""
     with pytest.raises(FileNotFoundError):
-        tdm.download_pdfs_from_file("nonexistent/file.txt")
+        tdm.download_pdfs("nonexistent/file.txt")
 
 
 @pytest.fixture(autouse=True)

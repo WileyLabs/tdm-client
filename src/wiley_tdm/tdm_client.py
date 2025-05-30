@@ -19,7 +19,7 @@ import time
 import urllib.parse
 from http import HTTPStatus
 from pathlib import Path
-from typing import Callable, Final, List, Optional
+from typing import Callable, Final, List, Optional, Union
 from uuid import UUID
 
 # Third-party imports
@@ -360,20 +360,36 @@ class TDMClient:
 
     def download_pdfs(
         self,
-        dois: List[str],
+        dois: Union[List[str], StrPath],
         on_result: Optional[Callable[[DownloadResult], None]] = None,
     ) -> List[DownloadResult]:
-        """Download multiple articles given their DOIs.
+        """Download multiple PDFs from either a list of DOIs or a file containing DOIs.
 
         Args:
-            dois: List of DOIs to download
-            on_result: Optional callback function that takes a DownloadResult
-                and is called after each download completes
+            dois: Either a list of DOI strings or a path to a file containing DOIs (one per line)
+            on_result: Optional callback function called after each download
 
         Returns:
             List[DownloadResult]: List of download results
+
+        Raises:
+            FileNotFoundError: If dois is a file path that doesn't exist
+            ValueError: If dois list is empty
         """
-        unique_dois = DOIUtils.dedupe(dois)
+        # Check if `dois` is a string or Path (matches StrPath type alias)
+        if isinstance(dois, (str, Path)):
+            dois_list: List[str] = FileUtils.read_lines_from_file(dois)
+            self.logger.info("Found %d DOIs in %s", len(dois_list), dois)
+        # Explicitly check that `dois` is a list of strings
+        elif isinstance(dois, list):
+            dois_list: List[str] = dois
+        else:
+            raise TypeError("Invalid type for `dois`. Expected List[str] or StrPath.")
+
+        if not dois_list:
+            raise ValueError("DOIs list cannot be empty")
+
+        unique_dois: List[str] = DOIUtils.dedupe(dois_list)
         results: List[DownloadResult] = []
 
         for doi in unique_dois:
@@ -388,38 +404,6 @@ class TDMClient:
                     )
                     time.sleep(self.api_rate_limit)
         return results
-
-    def download_pdfs_from_file(
-        self,
-        dois_file_path: StrPath = DOIS_FILE,
-        on_result: Optional[Callable[[DownloadResult], None]] = None,
-    ) -> List[DownloadResult]:
-        """Download articles listed in a file. Defaults to 'dois.txt'
-
-        Args:
-            dois_file_path: Path to text file containing DOIs, one per line. Can be either:
-                - A string path
-                - A PathLike object (recommended)
-                Relative paths are resolved from the current working directory.
-
-            on_result: Optional callback function that takes a DownloadResult
-            and is called after each download completes
-
-        Returns:
-            List[DownloadResult]: List of download results
-
-        Raises:
-            FileNotFoundError: If the DOIs file doesn't exist
-            OSError: If there are permission or other OS-level errors
-        """
-        dois = FileUtils.read_lines_from_file(dois_file_path)
-
-        if len(dois) == 0:
-            self.logger.warning("Empty or invalid DOIs file: %s", dois_file_path)
-            return []
-
-        self.logger.info("Found %d DOIs in %s", len(dois), dois_file_path)
-        return self.download_pdfs(dois, on_result=on_result)
 
     def _add_download_result(self, result: DownloadResult) -> None:
         """Record download result.

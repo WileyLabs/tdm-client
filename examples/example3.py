@@ -29,7 +29,7 @@ logging.basicConfig(
 tdm = TDMClient(download_dir=Path("downloads") / "oa-pdfs")
 
 # Download multiple Article PDFs, listed in a file, to the 'downloads/oa-pdfs' folder
-tdm.download_pdfs_from_file("oa-dois.txt")
+tdm.download_pdfs("oa-dois.txt")
 
 # Save the download results to a CSV file: 'results.csv'
 tdm.save_download_results()
