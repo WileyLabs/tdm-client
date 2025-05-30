@@ -1,0 +1,28 @@
+{
+    "recommendations": [
+        // Required Python Development
+        "ms-python.python",              // Core Python language support
+        "ms-python.vscode-pylance",      // Type checking and intellisense
+        "ms-python.debugpy",            // Debugging support
+        "ms-python.black-formatter",     // Code formatting
+        "ms-python.isort",              // Import sorting
+        "ms-python.pylint",             // Code quality
+        "ms-vscode.makefile-tools",     // Build support
+
+        // GitHub Integration
+        "github.vscode-github-actions",  // CI/CD workflow support
+        "github.copilot",               // AI code completion
+        "github.copilot-chat",          // AI assistance
+        "github.vscode-pull-request-github", // PR management
+        
+        // Documentation and Data Tools
+        "yzhang.markdown-all-in-one",   // Markdown editing
+        "tomoki1207.pdf",              // View PDF documentation
+        "mechatroner.rainbow-csv",      // CSV file viewing
+        "redhat.vscode-yaml",          // YAML configuration files
+        "vscode-icons-team.vscode-icons", // File icons
+
+        // Required for Windows Users
+        "ms-vscode-remote.remote-wsl"   // WSL development
+    ]
+}

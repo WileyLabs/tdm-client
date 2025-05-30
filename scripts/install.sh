@@ -9,8 +9,10 @@
 # 1. Sets up the Environment Variables (TDM_API_TOKEN & TDM_HOME)
 # 2. Clones the tdm-client Git repository in the current directory
 # 3. Creates a Python virtual environment, named 'venv'
-# 4. Installs the package with test dependencies
-# 5. Runs the test suite to verify installation
+# 4. Locally installs dependencies
+# 5. Lints project
+# 6. Tests with coverage
+# 7. Builds project
 #
 # Requirements:
 # - Python 3.9 or higher
@@ -54,10 +56,7 @@ cd "$TDM_HOME"
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
-pip install -e ".[dev]"
-
-# Peform local build, including tests
+# Locally installs dependencies, lints, tests with coverage, and builds project
 make all
 
 # Deactivate virtual environment
