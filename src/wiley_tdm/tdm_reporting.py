@@ -26,7 +26,7 @@ class TDMReporting:
     ]
 
     @staticmethod
-    def save_download_results(results: List[DownloadResult], csv_path: StrPath) -> None:
+    def save_results(results: List[DownloadResult], csv_path: StrPath) -> None:
         """Save download results to CSV file.
 
         Args:
@@ -34,6 +34,7 @@ class TDMReporting:
             csv_path: Path to the CSV file. Can be either:
                 - A PathLike object (recommend): Path("downloads") / "results.csv"
                 - A string: "downloads/results.csv" Will be converted to Path internally
+            Relative paths are resolved from the current working directory
 
         Note:
             Recommend using Path objects for platform-independent path handling.

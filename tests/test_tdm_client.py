@@ -101,7 +101,7 @@ def test_multiple_downloads(tdm):
     """Test multiple PDF downloads."""
     results = tdm.download_pdfs(OA_DOIS)
     assert len(results) == len(OA_DOIS)
-    assert len(tdm.download_results) == len(results)
+    assert len(tdm.results) == len(results)
 
     for result in results:
         assert_successful_download(result, result.doi)
@@ -112,13 +112,13 @@ def test_multiple_downloads_from_file(tdm):
 
     results = tdm.download_pdfs(DOIS_FILE)
     assert len(results) == DOIS_FILE_COUNT
-    assert len(tdm.download_results) == len(results)
+    assert len(tdm.results) == len(results)
 
     for result in results:
         assert_successful_download(result, result.doi)
 
 
-def test_save_download_results(tdm, tmp_path):
+def test_save_results(tdm, tmp_path):
     """Test saving download results to CSV file."""
     # First generate some download results
     result = tdm.download_pdf(OA_DOI)
@@ -126,7 +126,7 @@ def test_save_download_results(tdm, tmp_path):
 
     # Save results to temporary CSV file
     csv_path = tmp_path / "results.csv"
-    tdm.save_download_results(str(csv_path))
+    tdm.save_results(str(csv_path))
 
     # Verify file exists and contains data
     assert csv_path.exists()

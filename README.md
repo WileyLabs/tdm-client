@@ -95,8 +95,7 @@ source venv/bin/activate
 
 ### Basic Usage
 
-The following examples will download Article PDFs to a 'downloads' directory,
-relative to your current working directory, and name the files `<doi>`.pdf. Run all code in your [Virtual Environment](#install).
+The following examples will download Article PDFs to a 'downloads' directory, and name the files `<doi>`.pdf. All file & directory paths are relative to your current working directory (pwd). Run all code in your [Virtual Environment](#install).
 
 **Instantiate client**
 ```python
@@ -119,6 +118,11 @@ tdm.download_pdfs(["10.1111/jtsb.12390", "10.1111/jlse.12141"])
 **Download Multiple PDFs, DOIs listed in a file**
 ```python
 tdm.download_pdfs("dois.txt")
+```
+
+**Save download results to file (default: results.csv)**
+```python
+tdm.save_results()
 ```
 
 **More examples**

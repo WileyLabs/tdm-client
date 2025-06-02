@@ -47,12 +47,12 @@ def results_fixture():
     ]
 
 
-def test_save_download_results(tmp_path, results):
+def test_save_results(tmp_path, results):
     """Test saving results to CSV with all fields."""
 
     csv_path = tmp_path / TEST_CSV
 
-    TDMReporting.save_download_results(results, csv_path)
+    TDMReporting.save_results(results, csv_path)
 
     assert csv_path.exists()
 
@@ -87,6 +87,6 @@ def test_save_empty_results(tmp_path):
     """Test handling of empty results list."""
 
     csv_path = tmp_path / TEST_CSV
-    TDMReporting.save_download_results([], str(csv_path))
+    TDMReporting.save_results([], str(csv_path))
 
     assert not csv_path.exists()

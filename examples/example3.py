@@ -32,4 +32,4 @@ tdm = TDMClient(download_dir=Path("downloads") / "oa-pdfs")
 tdm.download_pdfs("oa-dois.txt")
 
 # Save the download results to a CSV file: 'results.csv'
-tdm.save_download_results()
+tdm.save_results()

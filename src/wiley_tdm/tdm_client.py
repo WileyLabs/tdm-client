@@ -105,7 +105,7 @@ class TDMClient:
         # Public attributes (set via public properties)
         self.download_dir = download_dir
         self.api_rate_limit = TDMClient.API_RATE_LIMIT
-        self.download_results_errors_only: bool = False
+        self.only_record_errors: bool = False
         self.skip_existing_files: bool = True
 
         # Private attributes
@@ -114,7 +114,7 @@ class TDMClient:
         self._api_token: str
         self._api_headers: dict[str, str] = {}
         self._api_session: requests.Session
-        self._download_results: List[DownloadResult] = []
+        self._results: List[DownloadResult] = []
 
         self._validate_api_token(api_token)
         self._create_api_session()
@@ -260,8 +260,56 @@ class TDMClient:
             duration = time.perf_counter() - start_time
             result.duration = duration
 
-        self._add_download_result(result)
+        self._add_result(result)
         return result
+
+    def download_pdfs(
+        self,
+        dois: Union[List[str], StrPath],
+        on_result: Optional[Callable[[DownloadResult], None]] = None,
+    ) -> List[DownloadResult]:
+        """Download multiple PDFs from either a list of DOIs or a file containing DOIs.
+
+        Args:
+            dois: Either a list of DOI strings or a path to a file containing DOIs (one per line)
+            on_result: Optional callback function called after each download
+        Relative paths are resolved from the current working directory
+
+        Returns:
+            List[DownloadResult]: List of download results
+
+        Raises:
+            FileNotFoundError: If dois is a file path that doesn't exist
+            ValueError: If dois list is empty
+        """
+        # Check if `dois` is a string or Path (matches StrPath type alias)
+        if isinstance(dois, (str, Path)):
+            dois_list: List[str] = FileUtils.read_lines_from_file(dois)
+            self.logger.info("Found %d DOIs in %s", len(dois_list), dois)
+        # Explicitly check that `dois` is a list of strings
+        elif isinstance(dois, list):
+            dois_list: List[str] = dois
+        else:
+            raise TypeError("Invalid type for `dois`. Expected List[str] or StrPath.")
+
+        if not dois_list:
+            raise ValueError("DOIs list cannot be empty")
+
+        unique_dois: List[str] = DOIUtils.dedupe(dois_list)
+        results: List[DownloadResult] = []
+
+        for doi in unique_dois:
+            result = self.download_pdf(doi)
+            if result:
+                results.append(result)
+                if on_result:
+                    on_result(result)
+                if result.status != DownloadStatus.EXISTING_FILE:
+                    self.logger.debug(
+                        "Rate limiting: sleeping for %s seconds", self.api_rate_limit
+                    )
+                    time.sleep(self.api_rate_limit)
+        return results
 
     def _download_pdf(self, doi: str) -> DownloadResult:
         """Download an article PDF given its DOI.
@@ -358,54 +406,7 @@ class TDMClient:
         except IOError as e:
             return DownloadResult(doi, DownloadStatus.STORAGE_ERROR, str(e), pdf_path)
 
-    def download_pdfs(
-        self,
-        dois: Union[List[str], StrPath],
-        on_result: Optional[Callable[[DownloadResult], None]] = None,
-    ) -> List[DownloadResult]:
-        """Download multiple PDFs from either a list of DOIs or a file containing DOIs.
-
-        Args:
-            dois: Either a list of DOI strings or a path to a file containing DOIs (one per line)
-            on_result: Optional callback function called after each download
-
-        Returns:
-            List[DownloadResult]: List of download results
-
-        Raises:
-            FileNotFoundError: If dois is a file path that doesn't exist
-            ValueError: If dois list is empty
-        """
-        # Check if `dois` is a string or Path (matches StrPath type alias)
-        if isinstance(dois, (str, Path)):
-            dois_list: List[str] = FileUtils.read_lines_from_file(dois)
-            self.logger.info("Found %d DOIs in %s", len(dois_list), dois)
-        # Explicitly check that `dois` is a list of strings
-        elif isinstance(dois, list):
-            dois_list: List[str] = dois
-        else:
-            raise TypeError("Invalid type for `dois`. Expected List[str] or StrPath.")
-
-        if not dois_list:
-            raise ValueError("DOIs list cannot be empty")
-
-        unique_dois: List[str] = DOIUtils.dedupe(dois_list)
-        results: List[DownloadResult] = []
-
-        for doi in unique_dois:
-            result = self.download_pdf(doi)
-            if result:
-                results.append(result)
-                if on_result:
-                    on_result(result)
-                if result.status != DownloadStatus.EXISTING_FILE:
-                    self.logger.debug(
-                        "Rate limiting: sleeping for %s seconds", self.api_rate_limit
-                    )
-                    time.sleep(self.api_rate_limit)
-        return results
-
-    def _add_download_result(self, result: DownloadResult) -> None:
+    def _add_result(self, result: DownloadResult) -> None:
         """Record download result.
 
         Args:
@@ -415,37 +416,35 @@ class TDMClient:
         message = f"DOI: {result.doi} - {result.status}"
 
         if result.status in (DownloadStatus.SUCCESS, DownloadStatus.EXISTING_FILE):
-            if self.download_results_errors_only:
+            if self.only_record_errors:
                 return
             self.logger.info(message)
         else:
             self.logger.error(message)
 
-        self._download_results.append(result)
+        self._results.append(result)
 
     @property
-    def download_results(self) -> List[DownloadResult]:
+    def results(self) -> List[DownloadResult]:
         """Get the current download results.
 
         Returns:
             List[DownloadResult]: List of all download attempts and their results
         """
-        return (
-            self._download_results.copy()
-        )  # Return copy to prevent external modification
+        return self._results.copy()  # Return copy to prevent external modification
 
-    def save_download_results(self, csv_path: StrPath = RESULTS_FILE) -> None:
+    def save_results(self, csv_path: StrPath = RESULTS_FILE) -> None:
         """Save download results to CSV file. Defaults to 'results.csv'
 
         Args:
             csv_path: Path where CSV file will be saved. Can be either:
                 - A string path
                 - A PathLike object (recommended)
-                Relative paths are resolved from the current working directory.
+                Relative paths are resolved from the current working directory
         Returns:
             None
 
         Raises:
             OSError: If the file cannot be written due to permissions or other OS issues
         """
-        TDMReporting.save_download_results(self._download_results, csv_path)
+        TDMReporting.save_results(self._results, csv_path)
