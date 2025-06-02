@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wiley-tdm"
-version = "0.1.0"
-description = "Client for downloading article PDFs from Wiley's TDM API"
+version = "1.0.0"
+description = "Client for downloading Article PDFs from Wiley's TDM API"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

@@ -3,6 +3,7 @@
 ![Python](https://img.shields.io/badge/python-v3.9+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Dependencies](https://img.shields.io/badge/dependencies-1-brightgreen)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 
 ## Table of Contents
 - [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
@@ -97,11 +98,11 @@ source venv/bin/activate
 
 The following examples will download Article PDFs to a 'downloads' directory, and name the files `<doi>`.pdf. All file & directory paths are relative to your current working directory (pwd). Run all code in your [Virtual Environment](#install).
 
-**Instantiate client**
+**Initialize client**
 ```python
 from wiley_tdm import TDMClient
 
-# Initialize client (uses TDM_API_TOKEN from environment)
+# Uses TDM_API_TOKEN from environment
 tdm = TDMClient()
 ```
 
@@ -120,11 +121,6 @@ tdm.download_pdfs(["10.1111/jtsb.12390", "10.1111/jlse.12141"])
 tdm.download_pdfs("dois.txt")
 ```
 
-**Save download results to file (default: results.csv)**
-```python
-tdm.save_results()
-```
-
 **More examples**
 
 See more [examples](examples/).
@@ -133,9 +129,9 @@ See more [examples](examples/).
 
 In most troubleshooting scenarios it can be helpful to generate a report:
 
-```
+```python
 # Save the download results to a CSV file: 'results.csv'
-tdm.save_download_results()
+tdm.save_results()
 ```
 
 ### Installation
