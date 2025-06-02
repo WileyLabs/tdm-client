@@ -44,11 +44,11 @@ jobs:
     - name: Wait for TestPyPI indexing
       run: |
         echo "Waiting for TestPyPI to index the package..."
-        sleep 30
+        sleep 60
 
     - name: Verify published versions
       run: |
         echo "Available versions:"
-        pip index versions --index-url https://test.pypi.org/ wiley-tdm
+        pip index versions --index-url https://test.pypi.org/simple/ wiley-tdm
 
 

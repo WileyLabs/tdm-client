@@ -45,9 +45,9 @@ jobs:
     - name: Wait for PyPI indexing
       run: |
         echo "Waiting for PyPI to index the package..."
-        sleep 30
+        sleep 60
 
     - name: Verify published versions
       run: |
         echo "Available versions:"
-        pip index versions --index-url https://pypi.org/ wiley-tdm
+        pip index versions --index-url https://pypi.org/simple/ wiley-tdm
