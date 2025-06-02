@@ -6,7 +6,7 @@ Detects public IP address using multiple fallback APIs.
 
 # Standard library imports
 import logging
-from typing import Final, List
+from typing import Final, List, Optional
 
 # Third-party imports
 import requests
@@ -19,7 +19,6 @@ class IPUtils:
     _logger = logging.getLogger(__name__)
 
     # IP Configuration
-    DEFAULT_IP: Final[str] = "127.0.0.1"
     IP_APIS: Final[List[str]] = [
         "https://api.ipify.org",
         "https://api.my-ip.io/ip",
@@ -31,11 +30,11 @@ class IPUtils:
     API_READ_TIMEOUT: Final[int] = 3  # seconds
 
     @staticmethod
-    def get_ip_address() -> str:
+    def get_ip_address() -> Optional[str]:
         """Get the public IP address by trying multiple API endpoints.
 
         Returns:
-            str: Public IP address or DEFAULT_IP if all attempts fail
+            Optional[str]: Public IP address if successful, or None if all attempts fail.
         """
         for api_url in IPUtils.IP_APIS:
             try:
@@ -52,4 +51,4 @@ class IPUtils:
                 continue
 
         IPUtils._logger.error("All IP detection attempts failed")
-        return IPUtils.DEFAULT_IP
+        return None

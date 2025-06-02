@@ -118,11 +118,13 @@ class TDMClient:
 
         self._validate_api_token(api_token)
         self._create_api_session()
-        self._my_ip_address: str = IPUtils.get_ip_address()
+        self._client_public_ip: Optional[str] = IPUtils.get_ip_address()
 
-        self.logger.info(
-            "Your IP address, used to check entitlements: %s", self._my_ip_address
-        )
+        if self._client_public_ip:
+            self.logger.info(
+                "Your public IP address, (only) used to check entitlements: %s",
+                self._client_public_ip,
+            )
 
     def _validate_api_token(self, api_token: Optional[str]) -> None:
         """Initialize the TDM API token.
@@ -368,7 +370,7 @@ class TDMClient:
             return DownloadResult(
                 doi,
                 DownloadStatus.ACCESS_DENIED,
-                f"TDM access denied from IP {self._my_ip_address}. Try manually: {pdf_url}",
+                f"TDM access denied from IP {self._client_public_ip}. Try manually: {pdf_url}",
                 api_status=status,
             )
         if status == HTTPStatus.NOT_FOUND:
