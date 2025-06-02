@@ -15,20 +15,33 @@ This will be automated/improved in the future
     - [tdm_client.py](src/wiley_tdm/tdm_client.py): API_USER_AGENT
 
 2. **Commit changes locally:**
-   ```bash
+    ```bash
     git commit -m "Prepare for release 1.0.0: update version references in pyproject.toml, README.md, CHANGELOG.md, and tdm_client.py"
-   ```
+    ```
 
 3. **Confirm build success**
     - [Check CI](https://github.com/WileyLabs/tdm-client/actions/workflows/ci.yml)
 
+4. **Tag repository**
+
+    ```bash
+    git tag -a v1.0.0 -m "Release version 1.0.0"
+    git push origin v1.0.0
+    ```
+
 4. **Publish to TestPyPI:**
-    - Manually run [Publish-Test](https://github.com/WileyLabs/tdm-client/actions/workflows/publish-test.yml) workflow, select Tag
+    - Manually run [Publish-Test](https://github.com/WileyLabs/tdm-client/actions/workflows/publish-test.yml) workflow
+        - Select tag: v1.0.0
     - Confirm success
     - Check [TestPyPI](https://test.pypi.org/project/wiley-tdm/)
 
 5. **Publish to PyPI:**
     - Create a new GitHub [Release](https://github.com/WileyLabs/tdm-client/releases)
+        - Select tag: v1.0.0
+        - Select target: main
+        - Title: Release v1.0.0
+        - Description: See [CHANGELOG](CHANGELOG.md)
+        - Publish release
     - Check [Publish](https://github.com/WileyLabs/tdm-client/actions/workflows/publish.yml) workflow (automatically triggered)
     - Confirm success
     - Check [PyPI](https://pypi.org/project/wiley-tdm/)
