@@ -10,8 +10,8 @@ help:
 
 # Install all dependencies
 setup:
-	python -m pip install --upgrade pip
-	pip install -e ".[dev]"
+	python3 -m pip install --upgrade pip
+	python3 -m pip install -e ".[dev]"
 
 # Clean build artifacts
 clean:
@@ -29,7 +29,7 @@ test:
 
 # Build package
 build:
-	python -m build
+	python3 -m build
 	twine check dist/*
 
 # Run all checks

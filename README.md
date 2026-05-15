@@ -1,9 +1,9 @@
 # wiley-tdm
 
-![Python](https://img.shields.io/badge/python-v3.9+-blue.svg)
+![Python](https://img.shields.io/badge/python-v3.10+-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Dependencies](https://img.shields.io/badge/dependencies-1-brightgreen)
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 
 ## Table of Contents
 - [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
@@ -57,7 +57,7 @@ The Wiley TDM Client has the following capabilities:
 
 You will require the following:
 
-* A [Python 3.9+](https://www.python.org/downloads/) environment
+* A [Python 3.10+](https://www.python.org/downloads/) environment
 * Python dependencies:
   * [requests](https://requests.readthedocs.io/) (≥2.32.0)
 * A [Wiley Online Library](https://onlinelibrary.wiley.com/) (WOL) Account
@@ -139,7 +139,7 @@ tdm.save_results()
 If you encounter installation issues:
 
 ```bash
-# Ensure you're using Python 3.9+
+# Ensure you're using Python 3.10+
 python3 --version
 
 # Update pip to latest version

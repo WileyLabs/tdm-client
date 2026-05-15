@@ -12,34 +12,41 @@ This will be automated/improved in the future
     - [pyproject.toml](pyproject.toml): Project version
     - [README](README.md): Version badge
     - [CHANGELOG](CHANGELOG.md): Release details
+    - [`__init__.py`](src/wiley_tdm/__init__.py): `__version__`
     - [tdm_client.py](src/wiley_tdm/tdm_client.py): API_USER_AGENT
 
 2. **Commit changes locally:**
     ```bash
-    git commit -m "Prepare for release 1.0.0: update version references in pyproject.toml, README.md, CHANGELOG.md, and tdm_client.py"
+    git commit -m "Prepare for release 1.1.0: update version references in pyproject.toml, README.md, CHANGELOG.md, __init__.py, and tdm_client.py"
     ```
 
-3. **Confirm build success**
-    - [Check CI](https://github.com/WileyLabs/tdm-client/actions/workflows/ci.yml)
-
-4. **Tag repository**
+3. **Push the version bump so [CI](https://github.com/WileyLabs/tdm-client/actions/workflows/ci.yml) runs:**
 
     ```bash
-    git tag -a v1.0.0 -m "Release version 1.0.0"
-    git push origin v1.0.0
+    git push origin main
     ```
 
-4. **Publish to TestPyPI:**
+4. **Confirm build success**
+    - [Check CI](https://github.com/WileyLabs/tdm-client/actions/workflows/ci.yml) for the commit you just pushed (or use **Run workflow** on `workflow_dispatch` if you need a manual run).
+
+5. **Tag repository** (after CI is green):
+
+    ```bash
+    git tag -a v1.1.0 -m "Release version 1.1.0"
+    git push origin v1.1.0
+    ```
+
+6. **Publish to TestPyPI:**
     - Manually run [Publish-Test](https://github.com/WileyLabs/tdm-client/actions/workflows/publish-test.yml) workflow
-        - Select tag: v1.0.0
+        - Select tag: v1.1.0
     - Confirm success
     - Check [TestPyPI](https://test.pypi.org/project/wiley-tdm/)
 
-5. **Publish to PyPI:**
+7. **Publish to PyPI:**
     - Create a new GitHub [Release](https://github.com/WileyLabs/tdm-client/releases)
-        - Select tag: v1.0.0
+        - Select tag: v1.1.0
         - Select target: main
-        - Title: Release v1.0.0
+        - Title: Release v1.1.0
         - Description: See [CHANGELOG](CHANGELOG.md)
         - Publish release
     - Check [Publish](https://github.com/WileyLabs/tdm-client/actions/workflows/publish.yml) workflow (automatically triggered)
@@ -48,4 +55,4 @@ This will be automated/improved in the future
 
 ## Pre-Releases
 
-Pre-releases (e.g., `1.0.0-rc1`) are used for testing purposes and are only published to TestPyPI. Follow steps 1–4 above for pre-releases, but do not proceed to step 5 (publishing to PyPI).
+Pre-releases (e.g., `1.1.0-rc1`) are used for testing purposes and are only published to TestPyPI. Follow steps 1–6 above for pre-releases, but do not proceed to step 7 (publishing to PyPI).

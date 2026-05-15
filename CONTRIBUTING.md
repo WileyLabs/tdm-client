@@ -42,7 +42,7 @@ Thank you again for your interest!
 
 Install the following:
 
-- [Python](https://www.python.org/downloads/) 3.9 or higher
+- [Python](https://www.python.org/downloads/) 3.10 or higher
   ```bash
   sudo apt update
   sudo apt install python3 python3-venv python3-pip
@@ -61,7 +61,7 @@ Assuming Debian based envinemnt (e.g. Ubuntu)
 ### Windows Users
 Follow VSC's [Developing in WSL](https://code.visualstudio.com/docs/remote/wsl). Then install inside WSL:
 
-- [Python](https://www.python.org/downloads/) 3.9 or higher
+- [Python](https://www.python.org/downloads/) 3.10 or higher
   ```bash
   sudo apt update
   sudo apt install python3 python3-venv python3-pip
