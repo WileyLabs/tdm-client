@@ -28,6 +28,12 @@ classifiers = [
     "Topic :: Utilities",
 ]
 
+[project.urls]
+Homepage = "https://github.com/WileyLabs/tdm-client"
+Changelog = "https://github.com/WileyLabs/tdm-client/blob/main/CHANGELOG.md"
+Repository = "https://github.com/WileyLabs/tdm-client"
+Issues = " https://github.com/WileyLabs/tdm-client/issues"
+
 [project.optional-dependencies]
 lint = [
     "black>=26.3.1",

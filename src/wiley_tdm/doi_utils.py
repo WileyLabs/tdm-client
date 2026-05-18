@@ -30,7 +30,7 @@ class DOIUtils:
 
     # DOI Configuration
     DOI_REGEX: Final[Pattern] = re.compile(
-        r"^10.\d{4,9}/[-._;()/:<>\[\]A-Z0-9]+$", re.IGNORECASE
+        r"^10.\d{4,9}/[-._;()+/:<>\[\]A-Z0-9]+$", re.IGNORECASE
     )
 
     # DOI.org API Configuration

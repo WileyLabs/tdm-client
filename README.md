@@ -6,19 +6,24 @@
 ![Version](https://img.shields.io/badge/version-1.1.0-blue)
 
 ## Table of Contents
-- [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
-- [Wiley TDM Client](#wiley-tdm-client)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Quick Start](#quick-start)
-  - [Environment Variables](#environment-variables)
-  - [Install](#install)
-  - [Basic Usage](#basic-usage)
-- [Troubleshooting](#troubleshooting)
-  - [Installation](#installation)
-  - [Access denied](#access-denied)
-- [Contributing](#contributing)
-- [License](#license)
+- [wiley-tdm](#wiley-tdm)
+  - [Table of Contents](#table-of-contents)
+  - [Text and Data Mining (TDM)](#text-and-data-mining-tdm)
+  - [Wiley TDM Client](#wiley-tdm-client)
+  - [Features](#features)
+  - [Requirements](#requirements)
+  - [Quick Start](#quick-start)
+    - [Environment Variables](#environment-variables)
+    - [Install](#install)
+    - [Basic Usage](#basic-usage)
+  - [Known Limitations](#known-limitations)
+    - [Access is IP address based only.](#access-is-ip-address-based-only)
+    - [SICI DOIs are not supported.](#sici-dois-are-not-supported)
+  - [Troubleshooting](#troubleshooting)
+    - [Installation](#installation)
+    - [Access denied](#access-denied)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Text and Data Mining (TDM)
 
@@ -59,7 +64,7 @@ You will require the following:
 
 * A [Python 3.10+](https://www.python.org/downloads/) environment
 * Python dependencies:
-  * [requests](https://requests.readthedocs.io/) (≥2.32.0)
+  * [requests](https://requests.readthedocs.io/) (≥2.33.1)
 * A [Wiley Online Library](https://onlinelibrary.wiley.com/) (WOL) Account
 * A TDM API Token, available from the WOL [TDM resources page](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining) using your WOL Account
 * Access to the content you wish to download
@@ -125,11 +130,42 @@ tdm.download_pdfs("dois.txt")
 
 See more [examples](examples/).
 
+## Known Limitations
+
+There are two known limitations of the TDM Client (/TDM API)
+
+### Access is IP address based only.
+
+The following scenarios are not supported:
+* Your WOL customer account doesn't have IP based access configured. (e.g. SSO only)
+* You do have IP based access but you are on a different network or subnet to the one configured. (e.g. Off campus)
+
+Ask your WOL Account Admin to confirm your access model. See [Troubleshooting]([#Troubleshooting) for further assistance.
+
+Potential Workarounds: 
+* Return to campus.
+* Manually download entitled content on WOL, via https://onlinelibrary.wiley.com/doi/epdf/{doi}
+* Request IP based access via your WOL Account Admin.
+* Request feed-based (non‑API‑based) content dissemination for TDM with Wiley's Digital Licensing team.
+
+### SICI DOIs are not supported.
+
+The TDM APIs cannot support [SICI](https://en.wikipedia.org/wiki/Serial_Item_and_Contribution_Identifier) DOIs. For example:
+* 10.1002/1096-9861(20010212)430:3<283::AID-CNE1031>3.0.CO;2-V
+  
+Potential Workarounds: 
+* Manually download entitled content on WOL, via https://onlinelibrary.wiley.com/doi/epdf/{doi}
+
 ## Troubleshooting
 
-In most troubleshooting scenarios it can be helpful to generate a report:
+In most troubleshooting scenarios it can be helpful to enable logging and generate a report:
 
 ```python
+# Enable logging
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 # Save the download results to a CSV file: 'results.csv'
 tdm.save_results()
 ```
@@ -139,11 +175,20 @@ tdm.save_results()
 If you encounter installation issues:
 
 ```bash
-# Ensure you're using Python 3.10+
+# Ensure you are in your Python Virtual Environment
+source ./venv/bin/activate
+
+# Ensure you are using Python 3.10+
 python3 --version
 
 # Update pip to latest version
 python3 -m pip install --upgrade pip
+
+# Ensure you are using the latest TDM Client
+pip show wiley-tdm
+
+# Update TDM Client to the latest version
+pip install --upgrade wiley-tdm
 ```
 
 Alternatively, try installing a fresh [Virtual Environment](#install).
