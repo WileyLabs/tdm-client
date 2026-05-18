@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
-          # For performance and compatibility with linters, using the latest Python version
+          # For CI stability, performance and compatibility reasons
           python-version: "3.12" 
           cache: 'pip'
 
@@ -43,13 +43,13 @@ jobs:
       max-parallel: 1 
       matrix:
         # For backwards compatibility
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -66,7 +66,7 @@ jobs:
         run: pytest --cov=wiley_tdm --cov-report=xml --cov-report=html
 
       - name: Upload HTML coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report-${{ matrix.python-version }}
           path: htmlcov
@@ -78,12 +78,12 @@ jobs:
     needs: [lint, test]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
-          # For performance reasons, using the latest Python version
+          # For CI stability, performance and compatibility reasons
           python-version: "3.12"
           cache: 'pip'
 
@@ -99,7 +99,7 @@ jobs:
         run: twine check dist/*
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: python-dist
           path: dist/

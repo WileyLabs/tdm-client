@@ -8,11 +8,12 @@ jobs:
     name: Publish to TestPyPI
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
+        # For CI stability, performance and compatibility reasons
         python-version: "3.12"
         cache: 'pip'
     
@@ -28,7 +29,7 @@ jobs:
       run: twine check dist/*
 
     - name: Upload test artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: testpypi-${{ github.run_number }}-${{ github.ref_name }}
         path: dist/
@@ -50,5 +51,3 @@ jobs:
       run: |
         echo "Available versions:"
         pip index versions --index-url https://test.pypi.org/simple/ wiley-tdm
-
-
