@@ -172,14 +172,16 @@ Files are named `<doi>.pdf` in the download directory.
 
 ### Rate limiting
 
-Batch downloads (`download_pdfs`) wait between API requests to stay within Wiley's rate limits. The default pause is **5 seconds**; you can increase it, but not set it below the default:
+Wiley's [TDM resources](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining) document API limits of up to **3 articles per second** and **60 requests per 10 minutes** (about **10 seconds between requests** for sustained use).
+
+Batch downloads (`download_pdfs`) sleep after each item (except existing local files). The default pause is **5 seconds**—a practical minimum given download time and typical batch sizes, not a substitute for the 10-second guideline on long, continuous runs. Increase it when needed; you cannot set it below the default:
 
 ```python
 tdm = TDMClient()
-tdm.api_rate_limit = 10.0  # Wait 10 seconds between downloads in a batch
+tdm.api_rate_limit = 10.0  # Align with Wiley's 10-second recommendation
 ```
 
-Single-article downloads (`download_pdf`) are not delayed.
+`download_pdf` is not delayed.
 
 ### Per-download callback
 
@@ -200,7 +202,7 @@ The callback receives the same `DownloadResult` returned by `download_pdf`. `dow
 
 ### Skip existing files
 
-By default, `skip_existing_files` is `True`: if `<doi>.pdf` already exists in the download directory, the client skips the API call and records the file as already present. Set to `False` to re-download:
+By default, `skip_existing_files` is `True`. When `<doi>.pdf` already exists in the download directory, the client skips the API call and records the file as already present. Set it to `False` to force a re-download:
 
 ```python
 tdm = TDMClient()
@@ -306,10 +308,10 @@ If problems persist, please [open an issue](https://github.com/WileyLabs/tdm-cli
 
 ### Access denied
 
-The majority of reported issues relate to access problems. Please note that only IP based access is supported, see [Known Limitations](#known-limitations). If you do have IP based access and are still experiencing issues try the following:
+The majority of reported issues relate to access problems. Please note that only IP based access is supported; see [Known Limitations](#known-limitations). If you do have IP based access and are still experiencing issues try the following:
 
 Check access directly on [Wiley Online Library](https://onlinelibrary.wiley.com/).
-- If access denied: contact your Institution/Wiley and check your subscription is active.
+- If access denied: contact your Institution or [Wiley](mailto:tdm@wiley.com) and check your subscription is active.
 - If access granted: ensure you are accessing the TDM API from a known IP address (see below).
 
 It is possible that the IP address you are accessing WOL from is different to where you are running your TDM code. Enable TDM logging (see [Troubleshooting](#troubleshooting)), observe your IP address in the TDM console log and compare to the IP address in your [browser](https://api.ipify.org?format=json).
