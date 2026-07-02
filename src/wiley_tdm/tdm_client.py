@@ -374,13 +374,6 @@ class TDMClient:
                 api_status=status,
             )
         if status == HTTPStatus.NOT_FOUND:
-            if ";" in doi:
-                return DownloadResult(
-                    doi,
-                    DownloadStatus.KNOWN_ISSUE,
-                    "DOI contains semicolon",
-                    api_status=status,
-                )
             return DownloadResult(
                 doi, DownloadStatus.UNKNOWN_DOI, None, api_status=status
             )

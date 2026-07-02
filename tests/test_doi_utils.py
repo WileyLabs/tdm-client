@@ -14,6 +14,7 @@ OA_DOI = "10.1111/modl.12927"
 OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]
 PAYWALLED_DOI = "10.1112/mtk.70009"
 NOT_DOI = "not-a-doi"
+SICI_DOI = "10.1002/(SICI)1096-8644(1998)107:27+<1::AID-AJPA2>3.0.CO;2-H"
 
 
 def test_valid():
@@ -24,6 +25,11 @@ def test_valid():
 def test_invalid():
     """Test validation with invalid DOI format."""
     assert DOIUtils.is_valid(NOT_DOI) is False
+
+
+def test_sici_doi_format():
+    """Test that SICI DOIs with semicolons pass format validation."""
+    assert DOIUtils.check_format(SICI_DOI) is True
 
 
 def test_valid_on_fail():

@@ -1,9 +1,11 @@
 # wiley-tdm
 
-![Python](https://img.shields.io/badge/python-v3.10+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Dependencies](https://img.shields.io/badge/dependencies-1-brightgreen)
-![Version](https://img.shields.io/badge/version-1.1.0-blue)
+[![PyPI version](https://img.shields.io/pypi/v/wiley-tdm?style=flat)](https://pypi.org/project/wiley-tdm/)
+[![Python Version](https://img.shields.io/pypi/pyversions/wiley-tdm?style=flat)](https://pypi.org/project/wiley-tdm/)
+[![PyPI Downloads](https://img.shields.io/pepy/dt/wiley-tdm?label=downloads&style=flat&color=brightgreen)](https://pepy.tech/projects/wiley-tdm)
+[![CI](https://img.shields.io/github/actions/workflow/status/WileyLabs/tdm-client/ci.yml?branch=main&style=flat)](https://github.com/WileyLabs/tdm-client/actions/workflows/ci.yml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000?style=flat)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen?style=flat)](https://github.com/WileyLabs/tdm-client/blob/main/LICENSE)
 
 ## Table of Contents
 - [wiley-tdm](#wiley-tdm)
@@ -25,7 +27,6 @@
     - [Download results](#download-results)
   - [Known Limitations](#known-limitations)
     - [Access is IP address based only](#access-is-ip-address-based-only)
-    - [SICI DOIs are not supported](#sici-dois-are-not-supported)
   - [Troubleshooting](#troubleshooting)
     - [Installation](#installation)
     - [Access denied](#access-denied)
@@ -230,7 +231,7 @@ tdm.save_results("my-results.csv")  # Default is results.csv
 
 ## Known Limitations
 
-There are two known limitations of the TDM Client (/TDM API):
+There is one known limitation of the TDM Client (/TDM API):
 
 ### Access is IP address based only
 
@@ -249,15 +250,6 @@ Ask your WOL Account Admin to confirm your access model. See [Troubleshooting](#
 **IP access not available:**
 * Request IP based access via your WOL Account Admin.
 * Request feed-based (non‑API‑based) content dissemination for TDM via your WOL Account Admin.
-
-### SICI DOIs are not supported
-
-The TDM APIs cannot support [SICI](https://en.wikipedia.org/wiki/Serial_Item_and_Contribution_Identifier) DOIs, containing semicolons. For example:
-* 10.1002/1096-9861(20010212)430:3<283::AID-CNE1031>3.0.CO;2-V
-* 10.1002/(SICI)1096-8644(1998)107:27+<1::AID-AJPA2>3.0.CO;2-H
-  
-**Potential Workarounds:**
-* Manually download entitled content on WOL, via https://onlinelibrary.wiley.com/doi/epdf/{doi}
 
 ## Troubleshooting
 

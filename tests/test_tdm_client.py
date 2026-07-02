@@ -25,7 +25,7 @@ INVALID_TOKEN = "not-a-uuid"
 DOIS_FILE = Path("tests") / "dois.txt"  # Test DOIs file
 DOIS_FILE_COUNT = 2  # Number of DOIs in test file
 NOT_DOI = "not-a-doi;"
-SEMICOLON_DOI = "10.1175/1520-0485(1986)016<1929:CTWOTE>2.0.CO;2"
+SICI_DOI = "10.1002/(SICI)1096-8644(1998)107:27+<1::AID-AJPA2>3.0.CO;2-H"
 OA_DOI = "10.1111/modl.12927"
 OA_DOIS = ["10.1111/modl.12927", "10.1155/2023/9786090"]
 PAYWALLED_DOI = "10.1112/mtk.70009"
@@ -185,14 +185,24 @@ def test_non_wiley_doi(tdm):
     assert result.size is None
 
 
-def test_semicolon_issue(tdm):
-    """Test known limitation with semicolons in DOIs."""
-    result = tdm.download_pdf(SEMICOLON_DOI)
+def test_sici_doi_download(tdm):
+    """Test downloading a SICI DOI containing a semicolon."""
+    result = tdm.download_pdf(SICI_DOI)
+    assert_successful_download(result, SICI_DOI)
 
-    assert result.status == DownloadStatus.KNOWN_ISSUE
+
+def test_not_found_returns_unknown_doi(tdm):
+    """Test that 404 responses are reported as unknown DOI."""
+    mock_response = Mock()
+    status_code = HTTPStatus.NOT_FOUND
+    mock_response.status_code = status_code
+    result = tdm._handle_api_error(NON_WILEY_DOI, status_code, mock_response)
+
+    assert result.status == DownloadStatus.UNKNOWN_DOI
+    assert result.doi == NON_WILEY_DOI
     assert result.path is None
     assert result.size is None
-    assert result.api_status is HTTPStatus.NOT_FOUND
+    assert result.api_status == status_code
 
 
 def test_unauthorized_access(tdm):

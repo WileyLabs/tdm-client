@@ -173,3 +173,6 @@ cython_debug/
 tmp/
 .gitnexus
 .claude
+
+# TDM client generated output
+results.csv
