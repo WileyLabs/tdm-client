@@ -64,7 +64,7 @@ class TDMClient:
     API_URL: Final[str] = "https://api.wiley.com/onlinelibrary/tdm/v1/articles/"
     API_TOKEN_ENV: Final[str] = "TDM_API_TOKEN"
     API_TOKEN_HEADER: Final[str] = "Wiley-TDM-Client-Token"
-    API_USER_AGENT: Final[str] = "TDMClient/1.1.0"
+    API_USER_AGENT: Final[str] = "TDMClient/1.2.0"
 
     # TDM API connection constants
     API_RATE_LIMIT: Final[float] = 5.0  # seconds
