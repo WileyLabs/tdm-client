@@ -9,7 +9,7 @@ description = "Client for downloading Article PDFs from Wiley's TDM API"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "requests>=2.33.1",
+    "requests>=2.34.2",
 ]
 authors = [
     {name = "Wiley Labs", email = "tdm@wiley.com"}
@@ -40,18 +40,18 @@ Issues = "https://github.com/WileyLabs/tdm-client/issues"
 
 [project.optional-dependencies]
 lint = [
-    "black>=26.3.1",
-    "pylint>=4.0.5",
-    "isort>=8.0.1",
-    "pytest>=9.0.3",
+    "black>=26.10.1",
+    "pylint>=4.1.3",
+    "isort>=9.0.2",
+    "pytest>=9.1.1",
 ]
 test = [
-    "pytest>=9.0.3",
+    "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
 ]
 build = [
-    "build>=1.5.0",
-    "twine>=6.2.0"
+    "build>=1.6.1",
+    "twine>=7.0.0",
 ]
 dev = [
     "wiley-tdm[lint,test,build]",  # Inherit test and build dependencies

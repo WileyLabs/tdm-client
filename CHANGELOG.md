@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Minimum `requests` version is now 2.34.2.
+
 ## [1.2.0] - 2026-07-02
 
 ### Added

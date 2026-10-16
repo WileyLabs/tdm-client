@@ -73,7 +73,7 @@ You will require the following:
 
 * A [Python 3.10+](https://www.python.org/downloads/) environment
 * Python dependencies:
-  * [requests](https://requests.readthedocs.io/) (≥2.33.1)
+  * [requests](https://requests.readthedocs.io/) (≥2.34.2)
 * A [Wiley Online Library](https://onlinelibrary.wiley.com/) (WOL) Account
 * Your TDM API Token (UUID format), available from the WOL [TDM resources page](https://onlinelibrary.wiley.com/library-info/resources/text-and-datamining) using your WOL Account
 * Access to the content you wish to download
